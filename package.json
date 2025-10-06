@@ -1,8 +1,14 @@
 {
+  "name": "@Rohit2422/forgeit",
+  "version": "1.0.0",
+  "description": "ForGeIT Chrome Extension: Clean, edit, and export HTML content",
+  "main": "popup.js",
+  "author": "Rohit",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.12.2"
   },
-  "devDependencies": {
-    "forgeit": "^1.0.2"
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   }
 }
