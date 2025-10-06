@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Table Editor</title>
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+  <header>
+    <h1>Table Editor</h1>
+    <div class="actions">
+      <button id="newTableBtn" title="Insert new table">➕ Table</button>
+      <button id="addRowAboveBtn" title="Insert row above">↥ Row</button>
+      <button id="addRowBelowBtn" title="Insert row below">↧ Row</button>
+      <button id="addColLeftBtn"  title="Insert column left">↤ Col</button>
+      <button id="addColRightBtn" title="Insert column right">↦ Col</button>
+      <button id="delRowBtn" title="Delete selected row(s)">🗑 Row</button>
+      <button id="delColBtn" title="Delete selected col(s)">🗑 Col</button>
+      <span class="sep"></span>
+      <button id="mergeBtn" title="Merge selected cells">⇄ Merge</button>
+      <button id="splitBtn" title="Split merged cell">⇅ Split</button>
+      <span class="sep"></span>
+      <label class="color">
+        Border <input type="color" id="borderColor" value="#2b3a50" />
+      </label>
+      <label class="color">
+        Cell bg <input type="color" id="cellBg" value="#ffffff" />
+      </label>
+      <span class="sep"></span>
+      <button id="boldBtn" title="Bold">B</button>
+      <button id="italicBtn" title="Italic">I</button>
+      <button id="underlineBtn" title="Underline">U</button>
+      <button id="alignLeftBtn" title="Align left">⟸</button>
+      <button id="alignCenterBtn" title="Align center">⟷</button>
+      <button id="alignRightBtn" title="Align right">⟹</button>
+      <span class="sep"></span>
+      <button id="copyHtmlBtn" title="Copy table HTML">📋 Copy HTML</button>
+      <button id="copyCodeBtn" title="Copy HTML as code">📄 Copy Code</button>
+      <button id="mergeTablesBtn">Merge Tables (Down)</button>
+      <span class="sep"></span>
+      <button id="undoBtn" title="Undo last change">↶ Undo</button>
+      <button id="redoBtn" title="Redo last change">↷ Redo</button>
+      <span class="sep"></span>
+    </div>
+  </header>
+
+  <section class="hint">
+    Tip: Click a cell to select. Shift-click another cell to select a rectangular range. Use Merge/Split to combine or restore cells.
+  </section>
+
+  <main>
+    <div id="editor" contenteditable="true" spellcheck="false"></div>
+  </main>
+
+  <footer>
+    <small>No external libraries. Works offline.</small>
+  </footer>
+
+  <template id="tableTemplate">
+    <table>
+      <tbody></tbody>
+    </table>
+  </template>
+
+  <script src="editor.js"></script>
+</body>
+</html>

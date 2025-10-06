@@ -1,0 +1,1207 @@
+:root {
+  /* Default theme = Yellow/Black */
+  --bg-color: #F8FAFC;       /* soft light grayish-white */
+  --card-color: #FFFFFF;     /* white cards/panels */
+  --accent-color: #6CA0DC;   /* muted blue accent */
+  --text-color: #2C3E50;     /* soft dark gray text */
+  --btn-text-color: #FFFFFF; /* white text on buttons */
+}
+
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+button {
+  background: var(--accent-color);
+  color: var(--btn-text-color);
+}
+
+/* === THEMES === */
+.theme-cool-white {
+  --bg-color: #F8FAFC;       /* soft light grayish-white */
+  --card-color: #FFFFFF;     /* white cards/panels */
+  --accent-color: #6CA0DC;   /* muted blue accent */
+  --text-color: #2C3E50;     /* soft dark gray text */
+  --btn-text-color: #FFFFFF; /* white text on buttons */
+}
+
+.theme-warm-white {
+  --bg-color: #FCF8F2;       /* very soft cream background */
+  --card-color: #FFFFFF;     /* pure white card/panel */
+  --accent-color: #F2A65A;   /* soft orange accent */
+  --text-color: #333333;     /* dark gray text */
+  --btn-text-color: #FFFFFF; /* white text on accent buttons */
+}
+
+.theme-paper-white {
+  --bg-color: #FFFDF5;       /* off-white, warm paper tone */
+  --card-color: #FFF9E6;     /* slightly darker panel */
+  --accent-color: #D9914B;   /* muted brown/orange accent */
+  --text-color: #4B4B4B;     /* medium gray text */
+  --btn-text-color: #FFFFFF; /* white text on buttons */
+}
+
+.theme-mint-light {
+  --bg-color: #F5FBF8;       /* very soft mint background */
+  --card-color: #FFFFFF;     /* white panels */
+  --accent-color: #57B894;   /* muted green accent */
+  --text-color: #2F3E3B;     /* soft charcoal text */
+  --btn-text-color: #FFFFFF; /* white text on buttons */
+}
+
+.theme-lavender-light {
+  --bg-color: #F7F5FA;       /* very light lavender background */
+  --card-color: #FFFFFF;     /* white card panels */
+  --accent-color: #9B7DD1;   /* muted lavender accent */
+  --text-color: #3A3A3A;     /* soft gray text */
+  --btn-text-color: #FFFFFF; /* white text on buttons */
+}
+
+.theme-sky-light {
+  --bg-color: #F0F8FF;       /* soft sky blue background */
+  --card-color: #FFFFFF;     /* white panels */
+  --accent-color: #7FB3D5;   /* muted sky blue accent */
+  --text-color: #2E3B4E;     /* dark grayish-blue text */
+  --btn-text-color: #FFFFFF; /* white text on buttons */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0px;
+  width: 400px;  /* 🔹 Increase this value (default ~300px) */
+  background: var(--bg-color);
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
+.card {
+  background: var(--card-color); /* dark gray card */
+  border-radius: 0px;
+  box-shadow: 0;
+  padding: 20px;
+  padding-top: 10px !important; /* reduce from 20px */
+
+}
+
+h1 {
+  margin-top: 8px;   /* reduce from default (usually ~20px) */
+  margin-bottom: 10px;
+  font-size: 30px;
+  text-align: center;
+  animation: popIn 0.5s ease-in-out;
+  color: var(--text-color); /* font -> text color */
+}
+
+h3 {
+  margin-top: 8px;   /* reduce from default (usually ~20px) */
+  margin-bottom: 10px;
+  font-size: 18px;
+  text-align: center;
+  animation: popIn 0.5s ease-in-out;
+  color: var(--text-color); /* font -> text color */
+}
+
+h4 {
+  margin-top: 1px;   /* reduce from default (usually ~20px) */
+  margin-bottom: 1px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color); /* font -> text color */
+  animation: fadeSlideIn 0.4s ease;
+}
+
+button {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;   /* reduce vertical space */
+  margin-bottom: 6px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent-color); /* yellow button */
+  color: var(--btn-text-color);    /* button text uses btn var */
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: popIn 0.8s ease-in-out;
+}
+
+button:hover {
+  background: var(--accent-color); /* lighter yellow */
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+button:active,
+#save-and-proceed:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+.info-icon {
+  display: inline-block;
+  margin-left: 8px;
+  font-style: normal;
+  background: var(--accent-color);
+  color: var(--bg-color);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  font-weight: bold;
+  cursor: help;
+  position: relative;
+  user-select: none;
+  font-size: 14px;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-color);
+  color: var(--text-color); /* font -> text color */
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 9999;
+}
+
+.info-icon:focus .tooltip,
+.info-icon:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.toggle-switch input[type="checkbox"] {
+  appearance: none;
+  width: 42px;
+  height: 22px;
+  background: #333;
+  border-radius: 50px;
+  position: relative;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.toggle-switch input:checked {
+  background: var(--accent-color);
+}
+
+.toggle-switch input::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: 0.3s;
+}
+
+.toggle-switch input:checked::before {
+  transform: translateX(20px);
+}
+
+.switch-label {
+  margin-left: 10px;
+  font-weight: 600;
+  color: var(--text-color); /* font -> text color */
+}
+
+.option-group {
+  margin-bottom: 15px;
+  background: var(--card-color);
+  border-radius: 6px;
+  padding: 10px;
+  animation: fadeInUp 0.5s ease forwards;
+  color: var(--text-color); /* ensure text inside groups uses text color */
+}
+
+.hidden { display: none; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+button.loading::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border: 2px solid var(--bg-color);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.input-group {
+  position: relative;
+  margin-top: 15px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-color); /* font -> text color */
+}
+
+.input-group label {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  background: var(--bg-color);
+  padding: 0 4px;
+  color: var(--text-color); /* font -> text color */
+  font-size: 14px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.input-group input:focus + label,
+.input-group input:not(:placeholder-shown) + label {
+  top: -8px;
+  left: 10px;
+  font-size: 12px;
+  color: var(--text-color); /* keep font in text color */
+}
+
+/* Save & Proceed Button */
+#saveProceedBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  font-size: 20px;
+}
+
+#save-and-proceed:hover {
+  background: var(--accent-color);
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.manual-popup {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: var(--card-color);
+  color: var(--text-color); /* font -> text color */
+  border-radius: 10px;
+  padding: 15px;
+  max-width: 300px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  transform-origin: top right;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 999;
+}
+.manual-popup.visible {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Active buttons */
+.active-btn {
+  background: #28a745 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+}
+
+/* Dropdowns, popups */
+/* Export dropdown container */
+.export-dropdown {
+  position: absolute;
+  top: 50%;
+  left: 50%;  /* 6px gap to the right of the icon */
+  transform: translateY(-50%); /* center vertically with the icon */
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 6px 0;
+  min-width: 180px;
+  opacity: 0;
+  pointer-events: none;
+}
+.export-dropdown a {
+  display: block;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-color); /* font -> text color */
+  text-decoration: none;
+}
+.export-dropdown a:hover {
+  background: var(--accent-color);   /* yellow hover background */
+  color: var(--bg-color);            /* dark text on hover */
+}
+
+/* Hidden popup menu */
+.hidden-popup {
+  display: none;
+  position: absolute;
+  top: 45px;
+  right: 15px;
+  background: var(--card-color);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.6);
+  z-index: 20000;
+  animation: fadeIn .2s ease;
+}
+.hidden-popup.show { display: block; }
+.hidden-popup button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 6px;
+  border: none;
+  background: var(--accent-color);
+  color: var(--btn-text-color); /* button font -> btn text color */
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.hidden-popup button:hover { background: var(--accent-color); }
+@keyframes fadeIn {
+  from { opacity:0; transform:translateY(-5px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+#theme-switcher {
+  position: fixed;   /* instead of absolute */
+  bottom: -2px;      /* stick to bottom */
+  left: -2px;       /* or left: 10px */
+  z-index: 1000;     /* stay above other elements */
+}
+
+#theme-menu {
+  display: none;
+  position: absolute;
+  bottom: 40px;   /* show UPWARD above the button */
+  left: 0;
+  background: var(--card-color);
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  z-index: 9999; /* make sure it's above other elements */
+}
+
+#theme-menu button {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--text-color); /* font -> text color */
+  text-align: left;
+  cursor: pointer;
+}
+
+#theme-menu button:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* === FLAT STYLE (No rounded corners) === */
+.card,
+#save-and-proceed,
+.input-group input,
+.manual-popup {
+  border-radius: 0 !important;
+}
+/* Remove extra space above heading */
+h3 {
+  margin-top: 0 !important;   /* stick to top */
+  margin-bottom: 6px !important;  /* smaller gap under */
+}
+
+/* Compact spacing for buttons */
+button {
+  margin-top: 3px !important;
+  margin-bottom: 3px !important;
+  padding: 8px 10px !important;   /* slightly smaller */
+}
+
+/* Optional: tighten section headers */
+h4 {
+  margin-top: 6px !important;
+  margin-bottom: 4px !important;
+}
+body {
+  padding-top: 0 !important;
+}
+
+#toolbar-wrapper {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 12000;
+}
+
+#toolbar-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+#toolbar-dropdown.hidden {
+  display: none;
+}
+
+#toolbar-dropdown button,
+#toolbar-dropdown .dropdown {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.9);
+  animation: smoothReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#toolbar-dropdown button:nth-child(1) { animation-delay: 0.05s; }
+#toolbar-dropdown button:nth-child(2) { animation-delay: 0.12s; }
+#toolbar-dropdown button:nth-child(3) { animation-delay: 0.19s; }
+#toolbar-dropdown .dropdown           { animation-delay: 0.26s; }
+#toolbar-dropdown button:nth-child(5) { animation-delay: 0.33s; }
+
+@keyframes smoothReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(3px) scale(1.03); /* slight overshoot */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+button {
+  padding: 6px 10px;
+  margin: 4px 2px;
+  border: 1px solid var(--accent-color); /* thin outline */
+  border-radius: none;
+  cursor: pointer;
+  background: transparent;   /* 🔹 no color by default */
+  color: var(--accent-color); /* 🔹 blue text */
+  font-size: 13px;
+  font-weight: bold;
+  transition: all 0.25s ease;
+}
+
+button:hover {
+  background: var(--accent-color);   /* 🔹 blue background */
+  color: var(--bg-color);            /* 🔹 white text */
+  transform: translateY(-1px);       /* subtle lift */
+}
+#toolbar-dropdown button,
+#toolbar-dropdown .dropdown {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.9);
+  animation: smoothReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  /* 🔹 circle background */
+  background: #fff;               /* white circle */
+  border-radius: 50%;             /* make it round */
+  width: 36px;                    /* fixed size */
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;                   /* keeps icon centered */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15); /* soft shadow */
+  border: none;                   /* clean look */
+}
+
+#toolbar-dropdown button svg {
+  stroke: var(--accent-color); /* keep icon blue */
+  width: 18px;
+  height: 18px;
+}
+#toolbar-dropdown button,
+#toolbar-dropdown .dropdown {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.9);
+  animation: smoothReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  /* default: no background */
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; /* prepare for circle */
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+#toolbar-dropdown button svg {
+  stroke: var(--accent-color);
+  width: 18px;
+  height: 18px;
+}
+
+/* 🔹 Circle appears on hover */
+#toolbar-dropdown button:hover {
+  background: #0a0000; 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2); /* glow effect */
+}
+#toolbar-dropdown button,
+#toolbar-dropdown .dropdown {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.9);
+  animation: smoothReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  /* default: no background */
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; /* prepare for circle */
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+
+#toolbar-dropdown button svg {
+  stroke: var(--accent-color);
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+/* 🔹 Circle + bounce on hover */
+#toolbar-dropdown button:hover {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transform: scale(1.15); /* bounce out */
+}
+
+#toolbar-dropdown button:hover svg {
+  transform: scale(1.1); /* icon bounces inside */
+}
+.icon-wrapper {
+  position: relative; /* so popup positions relative to button */
+  display: inline-block;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* === EXPORT DROPDOWN (Finalized) === */
+.export-dropdown {
+  position: absolute;
+  top: 100%;           /* dropdown appears below the icon */
+  left: 0;
+  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 6px 0;
+  min-width: 180px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 9999;
+}
+
+/* Show dropdown */
+.export-dropdown.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* While hiding */
+.export-dropdown.hiding {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Export options */
+.export-dropdown .export-option {
+  padding: 8px 12px;
+  font-size: 13px;
+  text-decoration: none;
+  color: #000000;
+  opacity: 0;
+  transform: translateY(-8px);
+  animation: dropdownReveal 0.35s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+/* Reveal one by one top → bottom */
+.export-dropdown.show .export-option:nth-child(1) { animation-delay: 0.05s; }
+.export-dropdown.show .export-option:nth-child(2) { animation-delay: 0.12s; }
+.export-dropdown.show .export-option:nth-child(3) { animation-delay: 0.19s; }
+.export-dropdown.show .export-option:nth-child(4) { animation-delay: 0.26s; }
+.export-dropdown.show .export-option:nth-child(5) { animation-delay: 0.33s; }
+.export-dropdown.show .export-option:nth-child(6) { animation-delay: 0.40s; }
+
+/* Hide one by one bottom → top */
+.export-dropdown.hiding .export-option {
+  animation: dropdownHide 0.25s ease forwards;
+}
+.export-dropdown.hiding .export-option:nth-child(6) { animation-delay: 0s; }
+.export-dropdown.hiding .export-option:nth-child(5) { animation-delay: 0.05s; }
+.export-dropdown.hiding .export-option:nth-child(4) { animation-delay: 0.1s; }
+.export-dropdown.hiding .export-option:nth-child(3) { animation-delay: 0.15s; }
+.export-dropdown.hiding .export-option:nth-child(2) { animation-delay: 0.2s; }
+.export-dropdown.hiding .export-option:nth-child(1) { animation-delay: 0.25s; }
+
+/* Hover effect */
+.export-dropdown .export-option:hover {
+  background: var(--accent-color);
+  border-radius: 4px;
+}
+
+/* Keyframes */
+@keyframes dropdownReveal {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes dropdownHide {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+/* Reset export dropdown */
+#exportDropdown {
+  position: fixed;                /* instead of absolute */
+  top: 0;
+  left: 0;
+  transform: none;
+}
+
+/* When visible, place it beside the button */
+#exportDropdown.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+#readme-manual {
+  position: fixed;
+  top: 45px;
+  right: 10px;
+  z-index: 9999;
+  background: var(--card-color);
+  color: var(--text-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  padding: 12px;
+  max-width: 200px;
+  width: auto;
+  word-wrap: break-word;
+  overflow-y: auto;
+  transform-origin: top right;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+/* When visible */
+#readme-manual.visible {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* When hiding */
+#readme-manual.hiding {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+
+
+/* Show / hide */
+#readme-manual.visible {
+  display: block;
+  animation: readmeIn 0.25s cubic-bezier(.22,1,.36,1) forwards;
+}
+#readme-manual.hiding {
+  animation: readmeOut 0.2s ease forwards;
+}
+
+@keyframes readmeIn {
+  from { opacity: 0; transform: translateX(10px) scale(.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes readmeOut {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(10px) scale(.95); }
+}
+/* Smooth transition */
+  #toolbar-icon path,
+  #toolbar-icon circle {
+    transition: all 0.3s ease;
+  }
+  #toolbar-main-btn {
+    background: white;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+  }
+  #toolbar-main-btn:hover {
+    background: #f0f8ff;
+  }
+
+  #toolbar-icon .circle,
+  #toolbar-icon .hand,
+  #toolbar-icon .x1,
+  #toolbar-icon .x2 {
+    transition: all 0.35s ease;
+    transform-origin: center;
+  }
+
+  /* Default = clock */
+  #toolbar-icon .x1,
+  #toolbar-icon .x2 {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  /* When toggled = show X, hide clock */
+  #toolbar-icon.toggled .circle,
+  #toolbar-icon.toggled .hand {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  #toolbar-icon.toggled .x1,
+  #toolbar-icon.toggled .x2 {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .icon-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 6px;
+    border-radius: 999px;
+    color: #007acc; /* SVG uses currentColor */
+    cursor: pointer;
+    transition: background .2s ease, transform .2s ease;
+  }
+  .icon-btn:hover { background: #f0f8ff; }
+  .icon-btn:active { transform: scale(0.96); }
+
+  #toolbar-icon .line {
+    transition: transform .35s ease, opacity .35s ease;
+    transform-origin: center;
+  }
+
+  /* Toggled (X) */
+  #toolbar-main-btn[data-open="true"] .top {
+    transform: translateY(6px) rotate(45deg);
+  }
+  #toolbar-main-btn[data-open="true"] .middle {
+    opacity: 0;
+  }
+  #toolbar-main-btn[data-open="true"] .bottom {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+  .toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;   /* left-aligns everything */
+  gap: 12px;
+  padding: 8px;
+}
+
+.icon-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: var(--accent-color);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.icon-btn:hover {
+  background: #ffeaea;
+  transform: scale(1.05);
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--accent-color);
+}
+
+/* X button styling */
+.main {
+  background: transparent;
+  box-shadow: none;
+}
+button {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 4px 0;
+  border: 1px solid var(--accent-color);
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-color);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+/* Hover (temporary highlight) */
+button:hover {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}
+
+/* Active (persists after click) */
+button.active-btn {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}
+.header {
+  display: flex;
+  justify-content: flex-end; /* push both to the right */
+  align-items: center;
+  padding: 8px;
+  gap: 8px; /* spacing between save & hamburger */
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  font-size: 20px;
+}
+.header {
+  position: fixed;  /* stick to top */
+  top: 1px;
+  right: 25px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  z-index: 12000; /* stay above other UI */
+}
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* two equal columns */
+  gap: 10px; /* spacing between buttons */
+}
+
+.button-grid button {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--accent-color);
+  background: var(--bg-color);
+  color: var(--accent-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+}
+
+.button-grid button:hover {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* two equal columns */
+  gap: 6px 8px; /* tighter spacing (row 6px, col 8px) */
+}
+
+.button-grid button {
+  width: 100%;
+  padding: 6px 8px; /* slimmer padding */
+  border: 1px solid var(--accent-color);
+  background: var(--bg-color);
+  color: var(--accent-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+  margin: 0; /* remove extra margins */
+  transition: background 0.2s, color 0.2s;
+}
+
+.button-grid button:hover {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}
+/* Reduce spacing between option groups */
+.option-group {
+  margin-bottom: 10px;  /* was probably 15–20px before */
+  padding: 0;           /* remove extra padding if any */
+}
+
+/* Section headers */
+.option-group h4,
+#active-panel h3 {
+  margin: 0 0 6px 0;    /* tighter spacing below headings */
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Input fields */
+input[type="text"],
+input[type="search"],
+textarea {
+  margin-bottom: 6px;   /* less space below inputs */
+  padding: 6px 8px;
+}
+
+/* Buttons */
+button {
+  margin-bottom: 6px;   /* reduce vertical gap between stacked buttons */
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+/* Grid buttons (2-column) */
+.button-grid {
+  gap: 6px 8px;         /* reduced row/col spacing */
+}
+/* Clickable ForGeIT logo toggle */
+.forgeit-logo {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--accent-color);
+  cursor: pointer;
+  text-align: center;
+  margin: 10px 0;
+  transition: transform 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.forgeit-logo.active {
+  color: #28a745; /* green when enabled */
+  transform: scale(1.1) rotate(-2deg);
+  text-shadow: 0 0 8px rgba(40,167,69,0.6); /* glow when active */
+}
+.forgeit-logo {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--accent-color);
+  cursor: pointer;
+  text-align: center;
+  margin: 10px 0;
+  transition: transform 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.forgeit-logo.active {
+  color: #28a745; /* green when enabled */
+  transform: scale(1.1) rotate(-2deg);
+  text-shadow: 0 0 8px rgba(40, 167, 69, 0.6); /* glowing effect */
+}
+button.highlightable.active {
+  background-color: #4CAF50; /* green */
+  color: white;
+}
+/* === EXPORT DROPDOWN (Finalized) === */
+.icon-wrapper {
+  position: relative;   /* parent controls dropdown positioning */
+}
+
+.export-dropdown {
+  position: absolute;
+  top: 100%;            /* directly below the button */
+  left: 0;
+  margin-top: 150px;      /* small spacing below icon */
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 6px 0;
+  min-width: 180px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 9999;
+}
+
+/* Show dropdown */
+.export-dropdown.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Hide state */
+.export-dropdown.hiding {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Export options */
+.export-dropdown .export-option {
+  padding: 8px 12px;
+  font-size: 13px;
+  text-decoration: none;
+  color: #000000;
+  opacity: 0;
+  transform: translateY(-8px);
+  animation: dropdownReveal 0.35s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+/* Reveal one by one */
+.export-dropdown.show .export-option:nth-child(1) { animation-delay: 0.05s; }
+.export-dropdown.show .export-option:nth-child(2) { animation-delay: 0.12s; }
+.export-dropdown.show .export-option:nth-child(3) { animation-delay: 0.19s; }
+.export-dropdown.show .export-option:nth-child(4) { animation-delay: 0.26s; }
+.export-dropdown.show .export-option:nth-child(5) { animation-delay: 0.33s; }
+.export-dropdown.show .export-option:nth-child(6) { animation-delay: 0.40s; }
+
+/* Hide one by one */
+.export-dropdown.hiding .export-option {
+  animation: dropdownHide 0.25s ease forwards;
+}
+.export-dropdown.hiding .export-option:nth-child(6) { animation-delay: 0s; }
+.export-dropdown.hiding .export-option:nth-child(5) { animation-delay: 0.05s; }
+.export-dropdown.hiding .export-option:nth-child(4) { animation-delay: 0.1s; }
+.export-dropdown.hiding .export-option:nth-child(3) { animation-delay: 0.15s; }
+.export-dropdown.hiding .export-option:nth-child(2) { animation-delay: 0.2s; }
+.export-dropdown.hiding .export-option:nth-child(1) { animation-delay: 0.25s; }
+
+/* Hover */
+.export-dropdown .export-option:hover {
+  background: var(--accent-color);
+  border-radius: 4px;
+}
+
+/* Keyframes */
+@keyframes dropdownReveal {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes dropdownHide {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+#toolbar-wrapper {
+  display: flex;
+  justify-content: flex-end;  /* 🔥 pushes icons to the right */
+  align-items: center;
+  gap: 8px;                   /* optional spacing between icons */
+  width: 100%;                /* make wrapper span full width */
+}
+.top-toolbar {
+  position: absolute;          /* anchor it */
+  top: 0;                      /* stick to top */
+  right: 0;                    /* stick to right */
+  
+  display: flex;
+  justify-content: flex-end;   /* icons flow to right */
+  align-items: center;
+  gap: 3px;                    /* spacing between buttons */
+  
+  padding: 6px 8px;           /* padding around icons */
+  background: transparent;     /* or give it a bg if needed */
+  z-index: 1000;               /* stay above other elements */
+}
+.stylings-popup {
+  position: absolute;
+  background: var(--card-color);
+  color: var(--accent-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  padding: 8px;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.stylings-popup button {
+  padding: 4px 8px;
+  margin-right: 2px;
+  font-weight: bold;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-color);
+  background: var(--bg-color);
+  color: var(--accent-color);
+  cursor: pointer;
+}
+
+.stylings-popup button:hover {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}
+
+.option-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.stylings-popup.hidden {
+  display: none;
+}
+
+.button-group button.active {
+  background: var(--accent-color);
+  color: var(--bg-color);
+}

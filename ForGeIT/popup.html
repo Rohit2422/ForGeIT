@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>ForGeIT</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="overrides.css">
+  <div id="toast-container"></div>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: px;
+      background: var(--bg-color);
+      line-height: 1.4;
+      color: var(--text-color);
+    }
+
+    .card {
+      background: var(--card-color);
+      /* dark gray card */
+      padding: 1px;
+      border-radius: 1px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      max-width: 360px;
+      margin: auto;
+    }
+
+    h3,
+    h4 {
+      margin-top: 1px;   /* reduce from default (usually ~20px) */
+      margin-bottom: 1px;
+      color: var(--accent-color);
+    }
+
+    input[type="text"] {
+      width: calc(100% - 20px);
+      padding: 6px;
+      margin-bottom: 8px;
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      background: var(--bg-color);
+      color: var(--accent-color);
+    }
+
+    button {
+      padding: 6px 10px;
+      margin: 4px 2px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: var(--accent-color);
+      /* yellow button */
+      color: var(--bg-color);
+      /* black text */
+      font-size: 13px;
+      font-weight: bold;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background: var(--accent-color);
+      /* lighter yellow on hover */
+      transform: translateY(-1px);
+    }
+
+    button.hidden {
+      display: none;
+    }
+
+    .option-group,
+    .toggle-switch {
+      margin-top: 12px;
+      padding: 8px;
+      background: var(--card-color);
+      /* dark section background */
+      border-radius: 6px;
+      color: var(--accent-color);
+    }
+
+#readme-container {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 11000;
+  display: flex;
+  gap: 0;          /* no flex gap */
+  align-items: center;
+}
+
+.icon-btn {
+  background: none !important;
+  border: none !important;
+  padding: 0;
+  margin: 0;
+  gap: 8px;
+  justify-content: flex-end;
+  cursor: pointer;
+  outline: none;
+  line-height: 0;   /* 🔥 remove inline spacing */
+}
+
+.icon-btn svg {
+  display: block;   /* 🔥 prevents inline gap around svg */
+  stroke: var(--accent-color);
+      /* yellow icons */
+    }
+
+    .icon-btn:hover,
+    .icon-btn:focus {
+      opacity: 0.8;
+    }
+
+    #readme-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    #readme-manual {
+      position: fixed;
+      top: 45px;
+      right: 15px;
+      z-index: 999;
+      background: var(--card-color);
+      color: var(--accent-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      padding: 12px;
+      width: 250px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      transform-origin: top right;
+    }
+
+    #readme-manual::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #readme-manual::-webkit-scrollbar-thumb {
+      background-color: var(--accent-color);
+      border-radius: 3px;
+    }
+
+    #readme-manual::-webkit-scrollbar-thumb:hover {
+      background-color: var(--accent-color);
+    }
+
+    #readme-manual.visible {
+      display: block;
+      animation: diagonalReveal 0.4s ease forwards;
+    }
+
+    #readme-manual.hiding {
+      animation: diagonalHide 0.35s ease forwards;
+    }
+
+    @keyframes diagonalReveal {
+      0% {
+        opacity: 0;
+        transform: scale(0) translate(20px, -20px);
+      }
+
+      70% {
+        opacity: 1;
+        transform: scale(1.05) translate(0, 0);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1) translate(0, 0);
+      }
+    }
+
+    @keyframes diagonalHide {
+      0% {
+        opacity: 1;
+        transform: scale(1) translate(0, 0);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(0) translate(20px, -20px);
+      }
+    }
+
+    p[align="right"] {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #999;
+      /* softer gray on dark bg */
+    }
+
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 99999;
+    }
+
+    .toast {
+      background: var(--accent-color);
+      /* yellow toast */
+      color: var(--bg-color);
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.success {
+      background: #28a745;
+      color: white;
+    }
+
+    .toast.error {
+      background: #dc3545;
+      color: white;
+    }
+
+    .toast.info {
+      background: var(--accent-color);
+      color: var(--bg-color);
+    }
+    :root {
+    --bg-color: #ffffff;   /* white */
+    --card-color: #ffffff; /* white */
+    --text-color: #000000; /* black text */
+    --accent-color: #007acc; /* blue accent if you want */
+    --btn-text-color: #ffffff; /* white text on buttons */
+  }
+  /* Scrollbar pulse glow */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 8px;
+  box-shadow: 0 0 6px rgba(0,122,204,0.4);
+  transition: all 0.3s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+  box-shadow: 0 0 12px rgba(0,122,204,0.8);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.2); }
+}
+  </style>
+
+</head>
+<body>
+<sidebar-menu>
+  <nav slot="default">
+    <a href="#">Products</a>
+    <a href="#">Help</a>
+    <a href="#">About</a>
+  </nav>
+</sidebar-menu>
+  <div class="card">
+    <h1 align="center">ForGeIT</h1>
+<input type="text" id="feature-search" placeholder="Search features..." style="
+  width: calc(100% - 12px);
+  padding: 6px;
+  margin: 6px auto;
+  border-radius: 6px;
+  border: 1px solid var(--accent-color);
+  display: block;
+  box-sizing: border-box;
+  color: var(--accent-color);
+  background: var(--bg-color);
+">
+    <h3>CSS Selector</h4>
+    <input type="text" id="selector-input" placeholder="Enter CSS selector (h,p,img,table,...)">
+    <button id="highlight-btn">Highlight</button>
+    <button id="clear-btn">Clear</button>
+    <div id="results"></div>
+
+    <div class="toggle-switch">
+      <input type="checkbox" id="extension-enabled">
+      <label for="extension-enabled" class="switch-label">Enable Extension</label>
+    </div>
+    <div id="toc-option" class="option-group hidden">
+      <h3>Table of Contents</h4>
+      <button id="generateTocBtn" class="btn-action">Generate TOC</button>
+    </div>
+    <!-- Existing Option Groups -->
+    <div id="remover-options" class="option-group hidden">
+  <h3>Content Cleanup Tools</h4>
+  <div class="button-grid">
+    <button id="remove-style-btn">Remove Stylings</button>
+    <button id="remove-attributes">Remove Classes & IDs</button>
+    <button id="remove-nbsp-btn">Remove nbsp;</button>
+    <button id="remove-span-btn">Remove &lt;span&gt; Tags</button>
+    <button id="remove-ul-li">Replace &lt;li&gt; with &lt;p&gt;</button>
+    <button id="remove-unicode">Fix Unicode Entities</button>
+    <button id="clean-google-links">Hyperlink Cleaner</button>
+    <button id="organize">Organize HTML</button>
+    <button id="stylings-btn">Append Stylings</button>
+   </div>
+  </div>
+    <div id="content-editor-option" class="option-group hidden">
+      <h3>Content Editor</h4>
+      <div class="button-grid">
+      <button id="assign-heading" class="highlightable">Activate Heading Mode</button>
+      <button id="enable-inline-editing" class="highlightable">Enable Inline Editing</button>
+      <button id="hyperlink-injector">Hyperlink Injector</button>
+      <button id="activate-content-editor" class="highlightable">Activate Line Break Fixer</button>
+      <button id="broken-link-checker">Broken URL Verifier</button>
+      <button id="open-gemini">Open Image to Table Converter</button>
+      <button id="activate-image-inserter" class="highlightable">Activate Image Inserter</button>
+      <button id="openEditorBtn">Open Table Editor</button>
+    </div>
+  </div>
+  <div id="footnote-option" class="option-group hidden">
+      <h3>Footnote Tools</h4>
+      <button id="footnoteToggleBtn" class="btn-action">Enable Footnote Intender</button>
+      <button id="auto-footnote-generator">Auto Footnote Generator</button>
+    </div>
+  <div id="html-validator-option" class="option-group hidden">
+      <h3>Validating</h4>
+      <button id="validate-html-btn">Validate HTML</button>
+      <button id="copy-report-btn" style="display:none;">Copy Report</button>
+      <button id="clear-report-btn" style="display:none;">Clear</button>
+
+      <div id="html-validator-panel" style="margin-top:8px; max-height:150px; overflow:auto;
+              background:#fff; border:1px solid #ccc;
+              padding:6px; border-radius:6px; font-size:13px;">
+      </div>
+
+      <div id="html-source-panel" style="margin-top:8px; max-height:300px; overflow:auto;
+              font-family:monospace; font-size:12px;
+              white-space:pre; background:#fafafa; border:1px solid #ccc;
+              padding:6px; border-radius:6px;">
+      </div>
+    </div>
+    <div id="bulk-downloader-option" class="option-group hidden">
+      <h3>Bulk Downloader</h4>
+      <button id="pdfDownloaderBtn">PDF Downloader</button>
+    </div>
+    <div id="theme-switcher">
+      <button id="theme-btn" class="icon-btn" title="Change Theme">
+        <div id="theme-btn" title="Change Theme">
+  <svg xmlns="http://www.w3.org/2000/svg" 
+       width="18" height="18" viewBox="0 0 24 24" 
+       fill="none" stroke="var(--accent-color)" 
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2a10 10 0 0 0-10 10 10 10 0 0 0 10 10h1a2 2 0 0 0 2-2c0-.5-.2-1-.6-1.4A2 2 0 0 1 14 16a2 2 0 0 1 2-2h2a4 4 0 0 0 0-8c-.9 0-1.7.3-2.3.9A10 10 0 0 0 12 2z"/>
+    <circle cx="6.5" cy="11.5" r="1.5"/>
+    <circle cx="9.5" cy="7.5" r="1.5"/>
+    <circle cx="14.5" cy="7.5" r="1.5"/>
+    <circle cx="17.5" cy="11.5" r="1.5"/>
+  </svg>
+</div>
+      </button>
+      <div id="theme-menu" class="hidden">
+  <button data-theme="theme-cool-white">Cool White (Low Eye Strain)</button>
+  <button data-theme="theme-mint-light">Mint Light</button>
+  <button data-theme="theme-lavender-light">Lavender Light</button>
+  <button data-theme="theme-sky-light">Soft Sky</button>
+      </div>
+    </div>
+    <div>
+<!-- Floating Stylings Popup (initially hidden) -->
+<div id="selection-stylings-popup" class="stylings-popup hidden">
+  <div class="button-group">
+    <button data-style="bold">B</button>
+    <button data-style="italic">I</button>
+    <button data-style="underline">U</button>
+    <button data-style="strike">S</button>
+  </div>
+  <div class="option-group">
+    <label>Highlight:</label>
+    <input type="color" id="selection-highlight-color" value="#ffff00">
+  </div>
+  <div class="option-group">
+    <label>Font Size:</label>
+    <select id="selection-font-size">
+      <option value="">Default</option>
+      <option value="12px">12px</option>
+      <option value="14px">14px</option>
+      <option value="16px">16px</option>
+      <option value="18px">18px</option>
+      <option value="20px">20px</option>
+      <option value="24px">24px</option>
+    </select>
+  </div>
+  <div class="option-group">
+    <label>Font Family:</label>
+    <select id="selection-font-family">
+      <option value="">Default</option>
+      <option value="Arial, sans-serif">Arial</option>
+      <option value="Times New Roman, serif">Times New Roman</option>
+      <option value="Courier New, monospace">Courier New</option>
+      <option value="Georgia, serif">Georgia</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+    </select>
+  </div>
+</div>
+<div class="top-toolbar">
+  <!-- Save & Proceed button -->
+  <button id="saveProceedBtn" title="Save & Proceed" class="icon-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+         viewBox="0 0 24 24" fill="none" stroke="#FFCC00" stroke-width="2" 
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <polyline points="17 21 17 13 7 13 7 21"/>
+      <polyline points="7 3 7 8 15 8"/>
+      <path d="M12 16l4 4-4 4" />
+    </svg>
+  </button>
+  <!-- Copy HTML -->
+      <button id="copyHtmlIcon" title="Copy page HTML" class="icon-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+         fill="none" stroke="#007acc" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round"
+         viewBox="0 0 24 24">
+      <rect x="8" y="8" width="12" height="12" rx="2" ry="2"/>
+      <rect x="4" y="4" width="12" height="12" rx="2" ry="2"/>
+    </svg>
+</button>
+<!-- Export Menu -->
+    <div class="icon-wrapper">
+      <button id="exportMenuBtn" title="Export Options" class="icon-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="#007acc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4" />
+          <path d="M5 21h14" />
+        </svg>
+      </button>
+      <div id="exportDropdown" class="export-dropdown">
+        <a href="#" class="export-option" data-format="html">Export as HTML</a>
+        <a href="#" class="export-option" data-format="pdf">Export as PDF</a>
+        <a href="#" class="export-option" data-format="doc">Export as Word (.doc)</a>
+        <a href="#" class="export-option" data-format="txt">Export as Text (.txt)</a>
+        <a href="#" class="export-option" data-format="md">Export as Markdown (.md)</a>
+        <a href="#" class="export-option" data-format="xlsx">Export as Excel (.xlsx)</a>
+      </div>
+    </div>
+<!-- Sidebar menu -->
+  <div id="sidebar" class="sidebar hidden">
+    <div class="sidebar-header">
+      <h2>Menu</h2>
+      <button id="closeBtn" class="close-btn">×</button>
+    </div>
+    <div class="sidebar-content">
+      <p><strong>About</strong></p>
+      <p>This is my Chrome extension.</p>
+      <p><strong>Version:</strong> <span id="version"></span></p>
+      <hr>
+      <a href="#">Products</a><br>
+      <a href="#">Help</a>
+    </div>
+  </div>
+    <link rel="stylesheet" href="popup.css" />
+    <script type="module" src="popup.js"></script>
+    <script src="sidebar-menu.js"></script>
+    <script src="htmlhint.min.js"></script>
+    <script src="jszip.min.js"></script>
+</body>
+</html>

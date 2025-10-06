@@ -1,0 +1,270 @@
+/* Global Styles */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  background: #f5f9ff;
+  color: #222;
+  transition: background 0.3s, color 0.3s;
+}
+
+.dark-mode {
+  background: #121212;
+  color: #e0e0e0;
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 60px 20px;
+  color: white;
+  background: linear-gradient(270deg, #007acc, #00d4ff, #4db8ff);
+  background-size: 600% 600%;
+  animation: gradientShift 12s ease infinite;
+}
+
+.hero .subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin-top: 10px;
+}
+
+#themeToggle {
+  margin-top: 20px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background: white;
+  color: #007acc;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+#themeToggle:hover {
+  transform: scale(1.05);
+}
+
+/* Typewriter */
+.typewriter {
+  overflow: hidden;
+  border-right: .15em solid white;
+  white-space: nowrap;
+  margin: 0 auto;
+  animation: typing 3s steps(20, end), blink .75s step-end infinite;
+  font-size: 2.5rem;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  from, to { border-color: transparent }
+  50% { border-color: white }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Cards */
+.card {
+  background: white;
+  margin: 25px auto;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 800px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(40px);
+  opacity: 0;
+  transition: all 0.6s ease;
+}
+
+.dark-mode .card {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.slide-up.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Features Grid */
+.features {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  color: #007acc;
+  margin-bottom: 20px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.feature-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.dark-mode .feature-card {
+  background: #1e1e1e;
+}
+
+/* Workflow Timeline */
+.timeline {
+  max-width: 900px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+.steps {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.step {
+  flex: 1 1 calc(25% - 20px);
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  transform: translateY(30px);
+  opacity: 0;
+  transition: all 0.6s ease;
+}
+
+.step.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.dark-mode .step {
+  background: #1e1e1e;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  font-size: 0.9em;
+  color: #555;
+}
+/* Theme Toggle Button - top-left */
+#themeToggle {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 50%;
+  background: white;
+  color: #007acc;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s, color 0.3s;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#themeToggle:hover {
+  transform: scale(1.1);
+  background: #007acc;
+  color: white;
+}
+
+/* Rest of your CSS remains unchanged... */
+.tooltip {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  margin: 0 4px;
+  font-weight: bold;
+  color: #fff; /* white text in hero section */
+}
+
+/* Tooltip text */
+.tooltip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 130%; /* show above */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 1000;
+  visibility: hidden;
+}
+
+/* Tooltip arrow */
+.tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: 118%; /* just under tooltip text */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(0,0,0,0.85) transparent transparent transparent;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+/* Show tooltip on hover */
+.tooltip:hover::after,
+.tooltip:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
+}
+.tooltip-box {
+  position: absolute;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeInUp 0.3s forwards;
+  z-index: 9999;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

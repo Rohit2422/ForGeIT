@@ -1,0 +1,77 @@
+{
+  "manifest_version": 3,
+  "name": "ForGeIT",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads",
+    "storage",
+    "clipboardWrite",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://*/*",
+    "https://*/*",
+    "file:///*",
+    "https://validator.w3.org/nu/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ForGeIT",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["popup.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "editor.html",
+        "gemini.html",
+        "popup.js",
+        "tree.html",
+        "editor.js",
+        "Footnote.css",
+        "Footnote.js",
+        "extractor.js",
+        "content.css",
+        "editor.css",
+        "popup.css",
+        "sidebar-menu.js",
+        "activePanel.js",
+        "htmlhint.min.js",
+        "about.html",
+        "products.html",
+        "products.css",
+        "products.js",
+        "help.html",
+        "help.css",
+        "help.js",
+        "jszip.min.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
