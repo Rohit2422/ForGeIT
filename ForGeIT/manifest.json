@@ -1,21 +1,26 @@
 {
   "manifest_version": 3,
   "name": "ForGeIT",
-  "version": "1.0",
+  "version": "1.2.1",
   "permissions": [
     "activeTab",
     "scripting",
     "downloads",
     "storage",
     "clipboardWrite",
-    "tabs"
+    "clipboardRead",
+    "tabs",
+    "contextMenus",
+    "sidePanel",
+    "windows"
   ],
   "host_permissions": [
     "<all_urls>",
     "http://*/*",
     "https://*/*",
     "file:///*",
-    "https://validator.w3.org/nu/*"
+    "https://validator.w3.org/nu/*",
+    "https://api.get-text-from-image.work/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -43,7 +48,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self';"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.get-text-from-image.work;"
   },
   "web_accessible_resources": [
     {
@@ -51,13 +56,19 @@
         "editor.html",
         "gemini.html",
         "popup.js",
+        "pdf.worker.min.js",
+        "pdf.min.js",
+        "pdfConverter.js",
+        "pdfConverter.html",
         "tree.html",
         "editor.js",
         "Footnote.css",
         "Footnote.js",
         "extractor.js",
+        "logo.html",
         "content.css",
         "editor.css",
+        "ocr_tool.css",
         "popup.css",
         "sidebar-menu.js",
         "activePanel.js",
@@ -69,7 +80,14 @@
         "help.html",
         "help.css",
         "help.js",
-        "jszip.min.js"
+        "ocr_tool.html",
+        "jszip.min.js",
+        "ocr_tool.js",
+        "canvas-toBlob.js",
+        "FileSaver.js",
+        "pdf.js",
+        "pdf.worker.js",
+        "popup.html"
       ],
       "matches": ["<all_urls>"]
     }

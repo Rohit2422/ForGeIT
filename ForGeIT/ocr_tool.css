@@ -1,0 +1,222 @@
+/* Base styling */
+body {
+  font-family: Arial, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: #F8F9FA;
+  margin: 0;
+  padding: 18px;
+  box-sizing: border-box;
+  color: #222;
+}
+
+.container {
+  width: 420px;
+  max-width: 100%;
+  border-radius: 10px;
+  padding: 15px 18px;
+  background-color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin: 6px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #030303;
+  border-bottom: 1px solid #E8ECEF;
+  padding-bottom: 10px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Button group */
+.button-group {
+  display:flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content:center;
+  width:100%;
+}
+
+button {
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 6px rgba(0,123,255,0.15);
+}
+
+button:hover { transform: translateY(-1px); background-color: #0063d1; }
+
+/* Canvas wrapper */
+.canvas-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+#imageCanvas {
+  max-width: 100%;
+  border: 1px solid #d6dbe0;
+  border-radius: 8px;
+  cursor: crosshair;
+  display:block;
+}
+
+/* PDF small nav (inline / compact) */
+.pdf-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.nav-control {
+  display:inline-block;
+  width:26px;
+  height: 22px;
+  text-align:center;
+  line-height:22px;
+  border-radius:6px;
+  background:#eef6ff;
+  color:#1a73e8;
+  cursor:pointer;
+  user-select:none;
+  border:1px solid rgba(26,115,232,0.12);
+  font-weight:600;
+}
+
+.nav-control:active { transform: translateY(1px); }
+
+.page-indicator {
+  background: transparent;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Progress bar */
+.progress-container {
+  width: 100%;
+  height: 16px;
+  background: #e6ecf3;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 12px 0;
+  position: relative;
+}
+
+#progressBar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #4c6ef5, #82cfff);
+  transition: width 0.35s ease;
+}
+
+#progressText {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+
+/* Textarea */
+textarea {
+  width: 100%;
+  height: 160px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  background: #f8fafc;
+  resize: vertical;
+  font-size: 14px;
+  box-sizing: border-box;
+  margin-top: 8px;
+  transition: border-color 0.18s ease;
+}
+
+textarea:focus {
+  outline:none;
+  border-color:#4c6ef5;
+  background:#fff;
+}
+
+/* Bottom buttons */
+.buttons {
+  display:flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 10px;
+  gap:8px;
+}
+
+.buttons button { flex: 1; }
+
+/* Hidden helper class */
+.hidden { display: none !important; }
+
+/* Footer */
+footer {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+}
+.html-output-wrap {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* same spacing rhythm as other UI parts */
+}
+
+/* Match the HTML output panel to OCR output */
+#htmlResult {
+  width: 100%;
+  height: 160px; /* same as #result */
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  background: #f8fafc;
+  resize: vertical;
+  font-size: 14px;
+  box-sizing: border-box;
+  margin-top: 8px;
+  font-family: monospace; /* keep monospaced look */
+  transition: border-color 0.18s ease;
+}
+
+#htmlResult:focus {
+  outline: none;
+  border-color: #4c6ef5;
+  background: #fff;
+}
+
+#copyHtmlBtn {
+  align-self: flex-start;
+  background: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+#copyHtmlBtn:hover {
+  background: #007BFF;
+}

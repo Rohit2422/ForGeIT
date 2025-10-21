@@ -112,7 +112,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (files.length > 5) {
       // Load JSZip dynamically
       const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      script.src = "jszip.min.js";
       script.onload = async () => {
         const zip = new JSZip();
         for (const f of files) {

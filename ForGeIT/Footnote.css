@@ -155,3 +155,9 @@
 }
 .icon-btn:hover { background: #f3f4f6; }
 .icon-btn:active { transform: translateY(1px); }
+button.highlightable.active {
+  background-color: #28a745 !important; /* green */
+  color: white !important;
+  border-color: #28a745 !important;
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.6);
+}

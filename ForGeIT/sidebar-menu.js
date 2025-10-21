@@ -173,15 +173,23 @@ class SidebarMenu extends HTMLElement {
     const toggleBtn = root.getElementById("toggleBtn");
 
     const open = () => {
-      sidebar.classList.add("show");
-      overlay.classList.add("show");
-      toggleBtn.classList.add("active");
-    };
-    const close = () => {
-      sidebar.classList.remove("show");
-      overlay.classList.remove("show");
-      toggleBtn.classList.remove("active");
-    };
+  sidebar.classList.add("show");
+  overlay.classList.add("show");
+  toggleBtn.classList.add("active");
+
+  // 🔥 Hide cube logo globally when sidebar opens
+  document.body.classList.add("sidebar-open");
+};
+
+const close = () => {
+  sidebar.classList.remove("show");
+  overlay.classList.remove("show");
+  toggleBtn.classList.remove("active");
+
+  // 🔥 Show cube logo again when sidebar closes
+  document.body.classList.remove("sidebar-open");
+};
+
 
     toggleBtn.addEventListener("click", () => {
       if (sidebar.classList.contains("show")) close();

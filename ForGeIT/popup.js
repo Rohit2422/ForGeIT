@@ -43,7 +43,10 @@ function setFeatureState(feature, isActive) {
 
 // === Active Panel injected into webpage (draggable, closable, interactive) ===
 function updateActivePanel() {
-  chrome.storage.local.get("activeFeatures", (data) => {
+  chrome.storage.local.get(["activePanelVisible", "activeFeatures"], (data) => {
+    const isVisible = data.activePanelVisible ?? false;
+    if (!isVisible) return;
+
     const active = data.activeFeatures || [];
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -53,81 +56,17 @@ function updateActivePanel() {
         target: { tabId: tabs[0].id },
         func: (initialActive) => {
           try {
-            // Remove old panel if exists
             const old = document.getElementById("__active_panel__");
             if (old) old.remove();
 
-            // Utility: cleanup effect(s) for a single feature (customize as needed)
-            function cleanupFeatureEffects(feature) {
-              try {
-                switch (feature) {
-                  case "Highlight":
-                    document.querySelectorAll("[data-css-highlight]").forEach(el => {
-                      el.style.outline = "";
-                      el.removeAttribute("data-css-highlight");
-                    });
-                    break;
-
-                  case "Inline Editing":
-                    document.querySelectorAll("[contenteditable='true']").forEach(el => {
-                      el.removeAttribute("contenteditable");
-                      el.style.outline = "";
-                      el.style.cursor = "";
-                    });
-                    window.__inlineEditing = false;
-                    break;
-
-                  case "Heading Assigner":
-                    localStorage.setItem("headingMode", "false");
-                    document.querySelectorAll("[data-heading-assigned]").forEach(el => {
-                      el.removeAttribute("data-heading-assigned");
-                      el.removeAttribute("contenteditable");
-                      el.style.outline = "";
-                    });
-                    break;
-
-                  case "Content Editor":
-                    localStorage.setItem("contentEditorMode", "false");
-                    document.querySelectorAll("[contenteditable='true']").forEach(el => {
-                      el.removeAttribute("contenteditable");
-                      el.style.outline = "";
-                    });
-                    break;
-
-                  case "Hyperlink Injector":
-                    if (typeof window.disableHyperlinkInjector === "function") {
-                      try { window.disableHyperlinkInjector(); } catch (e) { /* ignore */ }
-                    }
-                    break;
-
-                  case "Image Inserter":
-                    localStorage.setItem("imageInserter", "false");
-                    break;
-
-                  // add other feature cleanup cases here as needed
-                  default:
-                    // generic cleanup fallback (no-op)
-                    break;
-                }
-              } catch (e) {
-                console.warn("cleanupFeatureEffects error for", feature, e);
-              }
-            }
-
-            // Utility: cleanup all known features
-            function cleanupAllEffects() {
-              const known = ["Highlight", "Inline Editing", "Heading Assigner", "Content Editor", "Hyperlink Injector", "Image Inserter"];
-              known.forEach(f => cleanupFeatureEffects(f));
-            }
-
-            // Create panel container
+            // Panel container
             const panel = document.createElement("div");
             panel.id = "__active_panel__";
             Object.assign(panel.style, {
               position: "fixed",
               bottom: "20px",
               right: "20px",
-              background: "rgba(0,0,0,0.90)",
+              background: "rgba(0,0,0,0.9)",
               color: "#fff",
               padding: "10px 12px",
               borderRadius: "10px",
@@ -139,237 +78,100 @@ function updateActivePanel() {
               userSelect: "none",
             });
 
-            // HEADER (title + right-side: actions + close)
+            // Header
             const header = document.createElement("div");
             Object.assign(header.style, {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              gap: "8px",
+              cursor: "move",
               marginBottom: "8px",
-              cursor: "move"
             });
 
             const title = document.createElement("div");
             title.textContent = "🧩 Active Tools";
-            Object.assign(title.style, { fontWeight: "700", fontSize: "13px" });
+            Object.assign(title.style, {
+              fontWeight: "700",
+              fontSize: "13px",
+            });
 
-            const headerRight = document.createElement("div");
-            Object.assign(headerRight.style, { display: "flex", alignItems: "center", gap: "6px" });
-
-            // Action icons (compact)
-            const makeActionBtn = (icon, titleText) => {
-              const b = document.createElement("button");
-              b.type = "button";
-              b.textContent = icon;
-              b.title = titleText;
-              Object.assign(b.style, {
-                background: "transparent",
-                border: "none",
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: "15px",
-                padding: "2px",
-                lineHeight: "1"
-              });
-              return b;
-            };
-
-            const btnDisableAll = makeActionBtn("⛔", "Disable All");
-            const btnRefresh = makeActionBtn("🔄", "Refresh");
-            const btnSettings = makeActionBtn("⚙", "Settings");
-
-            // Close button (far right)
-            const closePanel = document.createElement("button");
-            closePanel.type = "button";
-            closePanel.textContent = "✖";
-            closePanel.title = "Close Panel";
-            Object.assign(closePanel.style, {
+            const closePanelBtn = document.createElement("button");
+            closePanelBtn.textContent = "✖";
+            closePanelBtn.title = "Close Panel";
+            Object.assign(closePanelBtn.style, {
               background: "transparent",
               border: "none",
-              color: "#ff6666",
+              color: "#fff",
               cursor: "pointer",
               fontSize: "15px",
               padding: "2px",
-              lineHeight: "1"
+              lineHeight: "1",
             });
 
-            // Append header items
-            headerRight.appendChild(btnDisableAll);
-            headerRight.appendChild(btnRefresh);
-            headerRight.appendChild(btnSettings);
-            headerRight.appendChild(closePanel);
+            closePanelBtn.addEventListener("click", () => {
+              panel.remove();
+              chrome.storage.local.set({
+                activePanelVisible: false,
+                activeFeatures: [],
+              });
+            });
 
-            header.appendChild(title);
-            header.appendChild(headerRight);
+            header.append(title, closePanelBtn);
             panel.appendChild(header);
 
-            // BODY (features list)
+            // Body
             const body = document.createElement("div");
-            Object.assign(body.style, { display: "flex", flexDirection: "column", gap: "6px", maxHeight: "320px", overflow: "auto" });
+            Object.assign(body.style, {
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              maxHeight: "320px",
+              overflow: "auto",
+            });
 
-            // small helper to show "no active tools"
-            function showEmptyMessage() {
-              body.innerHTML = "";
+            if (!initialActive.length) {
               const msg = document.createElement("div");
               msg.textContent = "No active tools.";
               msg.style.opacity = "0.85";
               msg.style.fontSize = "13px";
               body.appendChild(msg);
-            }
-
-            // Render function (reads the activeFeatures array provided)
-            function renderList(activeFeatures) {
-              body.innerHTML = "";
-              if (!Array.isArray(activeFeatures) || activeFeatures.length === 0) {
-                showEmptyMessage();
-                return;
-              }
-
-              activeFeatures.forEach((feature) => {
-                // row container
+            } else {
+              initialActive.forEach((f) => {
                 const row = document.createElement("div");
+                row.className = "feature-row";
                 Object.assign(row.style, {
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
                   background: "#111",
                   borderRadius: "6px",
                   padding: "6px 8px",
                 });
-                row.dataset.feature = feature;
 
-                // left label
                 const label = document.createElement("span");
-                label.textContent = feature;
+                label.textContent = f;
                 label.style.fontSize = "13px";
-
-                // individual close (remove) button
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.textContent = "✖";
-                btn.title = `Disable ${feature}`;
-                Object.assign(btn.style, {
-                  border: "none",
-                  background: "transparent",
-                  color: "#ff8888",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  padding: "0 2px"
-                });
-
-                // Attach click: remove that feature robustly
-                btn.addEventListener("click", () => {
-                  // Update storage: remove feature from local
-                  chrome.storage.local.get("activeFeatures", (data) => {
-                    let activeNow = data.activeFeatures || [];
-                    const updated = activeNow.filter(f => f !== feature);
-
-                    chrome.storage.local.set({ activeFeatures: updated }, () => {
-                      // Also remove its state from sync storage (non-blocking)
-                      chrome.storage.sync.get("featureStates", (syncData) => {
-                        const states = syncData.featureStates || {};
-                        if (states && states.hasOwnProperty(feature)) {
-                          delete states[feature];
-                          chrome.storage.sync.set({ featureStates: states }, () => {
-                            // optional: inform extension UI to refresh
-                            try { chrome.runtime.sendMessage({ action: "refreshActivePanel" }); } catch (e) { /* ignore */ }
-                          });
-                        } else {
-                          // still try sending a refresh message
-                          try { chrome.runtime.sendMessage({ action: "refreshActivePanel" }); } catch (e) { /* ignore */ }
-                        }
-                      });
-
-                      // Clean up effects immediately on page
-                      try { cleanupFeatureEffects(feature); } catch (e) { /* ignore */ }
-
-                      // Remove the row from UI
-                      row.remove();
-
-                      // If list is now empty, show empty msg
-                      if (!updated.length) showEmptyMessage();
-                    });
-                  });
-                });
-
                 row.appendChild(label);
-                row.appendChild(btn);
                 body.appendChild(row);
               });
             }
 
-            // ---------- Append body and panel to DOM ----------
             panel.appendChild(body);
             document.body.appendChild(panel);
 
-            // Initially render with either passed-in initialActive or fresh storage state
-            // Prefer fresh storage to reduce race conditions
-            chrome.storage.local.get("activeFeatures", (d) => {
-              renderList(d.activeFeatures || []);
-            });
-
-            // ---------- Action handlers ----------
-            btnDisableAll.addEventListener("click", () => {
-              // Clear local and sync, cleanup effects and UI
-              chrome.storage.local.set({ activeFeatures: [] }, () => {
-                chrome.storage.sync.set({ featureStates: {} }, () => {
-                  try { chrome.runtime.sendMessage({ action: "refreshActivePanel" }); } catch (e) {}
-                });
-
-                // cleanup all effects and update UI
-                try { cleanupAllEffects(); } catch (e) {}
-                showEmptyMessage();
-              });
-            });
-
-            btnRefresh.addEventListener("click", () => {
-              chrome.storage.local.get("activeFeatures", (d) => {
-                renderList(d.activeFeatures || []);
-              });
-            });
-
-            btnSettings.addEventListener("click", () => {
-              // Placeholder for future settings — show a tiny transient notice
-              const toast = document.createElement("div");
-              toast.textContent = "Settings coming soon";
-              Object.assign(toast.style, {
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
-                bottom: "8px",
-                background: "#333",
-                color: "#fff",
-                padding: "6px 8px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                opacity: "0",
-                transition: "opacity 0.18s ease"
-              });
-              panel.appendChild(toast);
-              requestAnimationFrame(() => toast.style.opacity = "1");
-              setTimeout(() => {
-                toast.style.opacity = "0";
-                setTimeout(() => toast.remove(), 220);
-              }, 1000);
-            });
-
-            closePanel.addEventListener("click", () => panel.remove());
-
-            // ---------- Dragging logic ----------
-            let isDragging = false;
-            let offsetX = 0, offsetY = 0;
+            // Drag panel
+            let isDragging = false,
+              offsetX = 0,
+              offsetY = 0;
             header.addEventListener("mousedown", (e) => {
               isDragging = true;
               offsetX = e.clientX - panel.getBoundingClientRect().left;
               offsetY = e.clientY - panel.getBoundingClientRect().top;
               panel.style.transition = "none";
-              e.preventDefault();
             });
             document.addEventListener("mousemove", (e) => {
               if (!isDragging) return;
-              panel.style.left = (e.clientX - offsetX) + "px";
-              panel.style.top = (e.clientY - offsetY) + "px";
+              panel.style.left = e.clientX - offsetX + "px";
+              panel.style.top = e.clientY - offsetY + "px";
               panel.style.right = "auto";
               panel.style.bottom = "auto";
             });
@@ -377,9 +179,8 @@ function updateActivePanel() {
               isDragging = false;
               panel.style.transition = "all 0.08s ease";
             });
-
           } catch (err) {
-            console.error("Active panel render error:", err);
+            console.error("Active panel error", err);
           }
         },
         args: [active],
@@ -387,6 +188,27 @@ function updateActivePanel() {
     });
   });
 }
+
+// 👇 Auto-refresh Active Panel when features change
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && (changes.activeFeatures || changes.activePanelVisible)) {
+    updateActivePanel();
+  }
+});
+
+// 👇 Reset on extension startup or reload
+chrome.runtime.onStartup.addListener(() => {
+  chrome.storage.local.set({ activeFeatures: [], activePanelVisible: true });
+});
+
+// 👇 Also reset when popup's Save button is clicked
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.action === "saveClicked") {
+    chrome.storage.local.set({ activeFeatures: [], activePanelVisible: true }, () => {
+      updateActivePanel();
+    });
+  }
+});
 
 // Setup a toggle for a popup button
 function setupFeatureToggle(buttonId, featureLabel) {
@@ -406,7 +228,7 @@ function setupFeatureToggle(buttonId, featureLabel) {
     });
 
     setFeatureState(featureLabel, isActive);
-    updateActivePanel(); // refresh after toggle
+    //updateActivePanel(); // refresh after toggle
   });
 
   // restore saved state on popup open
@@ -414,7 +236,7 @@ function setupFeatureToggle(buttonId, featureLabel) {
     if (data.featureStates && data.featureStates[featureLabel]) {
       btn.classList.add("active");
       setFeatureState(featureLabel, true);
-      updateActivePanel(); // refresh after load
+      //updateActivePanel(); // refresh after load
     }
   });
 }
@@ -449,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFeatureToggle("broken-link-checker", "Broken Link Checker");
 
   // 🔹 Ensure panel updates on popup open
-  updateActivePanel();
+  //updateActivePanel();
 
   // Save & Proceed handler
   const saveProceedBtn = document.getElementById("saveProceedBtn");
@@ -493,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.storage.local.set({ activeFeatures: [] });
 
         // Refresh active panel
-        updateActivePanel();
+        //updateActivePanel();
 
       } catch (err) {
         console.error("Save & Proceed failed:", err);
@@ -656,7 +478,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "refreshActivePanel") {
-    updateActivePanel();
+    //updateActivePanel();
   }
 });
 
@@ -751,6 +573,49 @@ if (footnoteToggleBtn) {
     }
   });
 }
+// === Active Panel Toggle Icon ===
+const activePanelToggle = document.getElementById("activePanelToggle");
+if (activePanelToggle) {
+  // Restore last saved state
+  chrome.storage.local.get("activePanelVisible", (data) => {
+    const isVisible = data.activePanelVisible ?? false;
+    activePanelToggle.style.color = isVisible ? "#007acc" : "#999";
+    if (isVisible) updateActivePanel();
+  });
+
+  // Toggle click
+  activePanelToggle.addEventListener("click", () => {
+    chrome.storage.local.get("activePanelVisible", (data) => {
+      const current = data.activePanelVisible ?? false;
+      const newState = !current;
+      chrome.storage.local.set({ activePanelVisible: newState }, () => {
+        activePanelToggle.style.color = newState ? "#007acc" : "#999";
+        if (newState) updateActivePanel();
+        else {
+          // Remove panel if disabling
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]) return;
+            chrome.scripting.executeScript({
+              target: { tabId: tabs[0].id },
+              func: () => {
+                const panel = document.getElementById("__active_panel__");
+                if (panel) panel.remove();
+              }
+            });
+          });
+        }
+      });
+    });
+  });
+}
+
+// === Feature Toggles should respect Active Panel state ===
+function safeUpdatePanel() {
+  chrome.storage.local.get("activePanelVisible", (data) => {
+    if (data.activePanelVisible) updateActivePanel();
+  });
+}
+
   // === Existing feature event listeners (removeAttrBtn, removeSpanBtn, etc.) ===
   if (removeStyleBtn) {
     removeStyleBtn.addEventListener("click", () => {
@@ -1194,6 +1059,7 @@ if (contentEditorBtn) {
     saveContentEditorBtn.style.display = "inline-block";
   });
 }
+
 // =======================
 // Inline Editing Feature
 // =======================
@@ -1259,243 +1125,192 @@ document.addEventListener("copy", (e) => {
   e.clipboardData.setData("text/plain", container.innerText.trim());
   e.preventDefault();
 });
-// Append Stylings
+// Toggle Stylings Toolbar
 document.getElementById('stylings-btn').addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
-      func: injectFloatingToolbar
+      func: () => {
+        const existing = document.getElementById('floating-stylings-toolbar');
+        if (existing) {
+          existing.remove(); // Remove toolbar if it exists
+        } else {
+          // Inject toolbar
+          (function injectFloatingToolbar() {
+            if (document.getElementById('floating-stylings-toolbar')) return;
+
+            const undoStack = [];
+            const redoStack = [];
+            const maxStackSize = 50;
+
+            const toolbar = document.createElement('div');
+            toolbar.id = 'floating-stylings-toolbar';
+            toolbar.style.position = 'absolute';
+            toolbar.style.zIndex = 100000;
+            toolbar.style.background = '#fff';
+            toolbar.style.border = '1px solid #007acc';
+            toolbar.style.borderRadius = '8px';
+            toolbar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+            toolbar.style.padding = '6px 10px';
+            toolbar.style.display = 'flex';
+            toolbar.style.flexWrap = 'wrap';
+            toolbar.style.gap = '4px';
+            toolbar.style.fontSize = '13px';
+            toolbar.style.userSelect = 'none';
+            toolbar.style.minWidth = '180px';
+            toolbar.style.opacity = '0';
+            toolbar.style.transition = 'opacity 0.15s, top 0.1s, left 0.1s';
+
+            toolbar.innerHTML = `
+              <button data-style="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+              <button data-style="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+              <button data-style="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+              <button data-style="strike" title="Strikethrough (Alt+Shift+5)"><s>S</s></button>
+              <button data-style="sub" title="Subscript (Ctrl+,)">Sub</button>
+              <button data-style="sup" title="Superscript (Ctrl+.)">Sup</button>
+            `;
+
+            document.body.appendChild(toolbar);
+
+            // Undo/Redo snapshot
+            function saveSnapshot() {
+              const bodyClone = document.body.cloneNode(true);
+              const toolbarEl = bodyClone.querySelector('#floating-stylings-toolbar');
+              if (toolbarEl) toolbarEl.remove();
+              undoStack.push(bodyClone.innerHTML);
+              if (undoStack.length > maxStackSize) undoStack.shift();
+              redoStack.length = 0;
+            }
+
+            function undo() {
+              if (!undoStack.length) return;
+              redoStack.push(getBodyContentWithoutToolbar());
+              const html = undoStack.pop();
+              setBodyContentWithoutToolbar(html);
+            }
+
+            function redo() {
+              if (!redoStack.length) return;
+              undoStack.push(getBodyContentWithoutToolbar());
+              const html = redoStack.pop();
+              setBodyContentWithoutToolbar(html);
+            }
+
+            function getBodyContentWithoutToolbar() {
+              const clone = document.body.cloneNode(true);
+              const toolbarEl = clone.querySelector('#floating-stylings-toolbar');
+              if (toolbarEl) toolbarEl.remove();
+              return clone.innerHTML;
+            }
+
+            function setBodyContentWithoutToolbar(html) {
+              const toolbarEl = document.getElementById('floating-stylings-toolbar');
+              document.body.innerHTML = html;
+              if (toolbarEl) document.body.appendChild(toolbarEl);
+            }
+
+            // Apply styling to selected text
+            function applyStyle(style) {
+              const sel = window.getSelection();
+              if (!sel.rangeCount) return;
+              const range = sel.getRangeAt(0);
+              if (range.collapsed) return;
+
+              saveSnapshot();
+
+              let node;
+              switch (style) {
+                case 'bold': node = document.createElement('b'); break;
+                case 'italic': node = document.createElement('i'); break;
+                case 'underline': node = document.createElement('u'); break;
+                case 'strike': node = document.createElement('s'); break;
+                case 'sub': node = document.createElement('sub'); break;
+                case 'sup': node = document.createElement('sup'); break;
+                default: node = document.createElement('span'); break;
+              }
+
+              node.appendChild(range.extractContents());
+              range.insertNode(node);
+              sel.removeAllRanges();
+              updateActiveButtons();
+            }
+
+            // Update active button highlights
+            function updateActiveButtons() {
+              const sel = window.getSelection();
+              if (!sel.rangeCount) return;
+              const parent = sel.anchorNode && sel.anchorNode.parentElement;
+              if (!parent) return;
+
+              toolbar.querySelectorAll('button[data-style]').forEach(btn => {
+                const style = btn.getAttribute('data-style');
+                btn.classList.remove('active');
+                switch (style) {
+                  case 'bold': if (document.queryCommandState('bold') || parent.closest('b')) btn.classList.add('active'); break;
+                  case 'italic': if (document.queryCommandState('italic') || parent.closest('i')) btn.classList.add('active'); break;
+                  case 'underline': if (document.queryCommandState('underline') || parent.closest('u')) btn.classList.add('active'); break;
+                  case 'strike': if (parent.closest('s')) btn.classList.add('active'); break;
+                  case 'sub': if (parent.closest('sub')) btn.classList.add('active'); break;
+                  case 'sup': if (parent.closest('sup')) btn.classList.add('active'); break;
+                }
+              });
+            }
+
+            // Button events
+            toolbar.querySelectorAll('button[data-style]').forEach(btn => {
+              const style = btn.getAttribute('data-style');
+              if (!style) return;
+              btn.addEventListener('click', () => applyStyle(style));
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', e => {
+              if (e.ctrlKey && !e.shiftKey) {
+                switch (e.key.toLowerCase()) {
+                  case 'b': e.preventDefault(); applyStyle('bold'); break;
+                  case 'i': e.preventDefault(); applyStyle('italic'); break;
+                  case 'u': e.preventDefault(); applyStyle('underline'); break;
+                  case 'z': e.preventDefault(); undo(); break;
+                  case 'y': e.preventDefault(); redo(); break;
+                  case '.': e.preventDefault(); applyStyle('sup'); break;
+                  case ',': e.preventDefault(); applyStyle('sub'); break;
+                }
+              }
+              if (e.altKey && e.shiftKey && e.key === '5') e.preventDefault(), applyStyle('strike');
+              setTimeout(updateActiveButtons, 10);
+            });
+
+            // Show toolbar near selection
+            document.addEventListener('mouseup', updateToolbarPosition);
+            document.addEventListener('keyup', updateToolbarPosition);
+
+            function updateToolbarPosition() {
+              const sel = window.getSelection();
+              if (!sel.rangeCount || sel.isCollapsed) {
+                toolbar.style.opacity = '0';
+                return;
+              }
+              const range = sel.getRangeAt(0).getBoundingClientRect();
+              toolbar.style.top = `${window.scrollY + range.top - toolbar.offsetHeight - 5}px`;
+              toolbar.style.left = `${window.scrollX + range.left}px`;
+              toolbar.style.opacity = '1';
+              updateActiveButtons();
+            }
+
+            // Toolbar CSS
+            const styleEl = document.createElement('style');
+            styleEl.textContent = `
+              #floating-stylings-toolbar button.active { background:#007acc; color:#fff; }
+              #floating-stylings-toolbar button { cursor:pointer; }
+            `;
+            document.head.appendChild(styleEl);
+
+          })();
+        }
+      }
     });
   });
 });
-function injectFloatingToolbar() {
-  if (document.getElementById('floating-stylings-toolbar')) return;
-
-  const undoStack = [];
-  const redoStack = [];
-  const maxStackSize = 50;
-
-  const toolbar = document.createElement('div');
-  toolbar.id = 'floating-stylings-toolbar';
-  toolbar.style.position = 'absolute';
-  toolbar.style.zIndex = 100000;
-  toolbar.style.background = '#fff';
-  toolbar.style.border = '1px solid #007acc';
-  toolbar.style.borderRadius = '8px';
-  toolbar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-  toolbar.style.padding = '6px 10px';
-  toolbar.style.display = 'flex';
-  toolbar.style.flexWrap = 'wrap';
-  toolbar.style.gap = '4px';
-  toolbar.style.fontSize = '13px';
-  toolbar.style.userSelect = 'none';
-  toolbar.style.minWidth = '240px';
-  toolbar.style.opacity = '0';
-  toolbar.style.transition = 'opacity 0.15s, top 0.1s, left 0.1s';
-
-  toolbar.innerHTML = `
-    <button data-style="bold" title="Bold (Ctrl+B)"><b>B</b></button>
-    <button data-style="italic" title="Italic (Ctrl+I)"><i>I</i></button>
-    <button data-style="underline" title="Underline (Ctrl+U)"><u>U</u></button>
-    <button data-style="strike" title="Strikethrough (Alt+Shift+5)"><s>S</s></button>
-    <button data-style="sub" title="Subscript (Ctrl+,)">Sub</button>
-    <button data-style="sup" title="Superscript (Ctrl+.)">Sup</button>
-    <button data-style="uppercase" title="Uppercase (Ctrl+Shift+U)">A↑</button>
-    <button data-style="lowercase" title="Lowercase (Ctrl+Shift+L)">a↓</button>
-    <button data-style="capitalize" title="Capitalize (Ctrl+Shift+C)">Aa</button>
-    <input type="color" id="text-color" title="Text Color">
-    <input type="color" id="bg-color" title="Highlight">
-    <select id="font-size" title="Font Size">
-      <option value="">Font Size</option>
-      <option value="12px">12px</option>
-      <option value="14px">14px</option>
-      <option value="16px">16px</option>
-      <option value="18px">18px</option>
-      <option value="20px">20px</option>
-      <option value="24px">24px</option>
-    </select>
-    <select id="font-family" title="Font Family">
-      <option value="">Font Family</option>
-      <option value="Arial, sans-serif">Arial</option>
-      <option value="Times New Roman, serif">Times New Roman</option>
-      <option value="Courier New, monospace">Courier New</option>
-      <option value="Georgia, serif">Georgia</option>
-      <option value="Verdana, sans-serif">Verdana</option>
-    </select>
-  `;
-
-  document.body.appendChild(toolbar);
-
-  // Undo/Redo snapshot
-function saveSnapshot() {
-  const bodyClone = document.body.cloneNode(true);
-
-  // Remove the toolbar from the snapshot
-  const toolbarEl = bodyClone.querySelector('#floating-stylings-toolbar');
-  if (toolbarEl) toolbarEl.remove();
-
-  undoStack.push(bodyClone.innerHTML);
-  if (undoStack.length > maxStackSize) undoStack.shift();
-  redoStack.length = 0;
-}
-
-function undo() {
-  if (!undoStack.length) return;
-  redoStack.push(getBodyContentWithoutToolbar());
-  const html = undoStack.pop();
-  setBodyContentWithoutToolbar(html);
-}
-
-function redo() {
-  if (!redoStack.length) return;
-  undoStack.push(getBodyContentWithoutToolbar());
-  const html = redoStack.pop();
-  setBodyContentWithoutToolbar(html);
-}
-
-function getBodyContentWithoutToolbar() {
-  const clone = document.body.cloneNode(true);
-  const toolbarEl = clone.querySelector('#floating-stylings-toolbar');
-  if (toolbarEl) toolbarEl.remove();
-  return clone.innerHTML;
-}
-
-function setBodyContentWithoutToolbar(html) {
-  // Save reference to toolbar
-  const toolbarEl = document.getElementById('floating-stylings-toolbar');
-
-  // Replace body content without removing toolbar
-  document.body.innerHTML = html;
-
-  // Re-attach toolbar
-  if (toolbarEl) document.body.appendChild(toolbarEl);
-}
-
-
-  // Apply styling to selected text
-  function applyStyle(style, value = null) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    if (range.collapsed) return;
-
-    saveSnapshot();
-
-    let node;
-    switch (style) {
-      case 'bold': node = document.createElement('b'); break;
-      case 'italic': node = document.createElement('i'); break;
-      case 'underline': node = document.createElement('u'); break;
-      case 'strike': node = document.createElement('s'); break;
-      case 'sub': node = document.createElement('sub'); break;
-      case 'sup': node = document.createElement('sup'); break;
-      default: node = document.createElement('span'); break;
-    }
-
-    node.appendChild(range.extractContents());
-    const s = node.style;
-
-    switch (style) {
-      case 'uppercase': s.textTransform = 'uppercase'; break;
-      case 'lowercase': s.textTransform = 'lowercase'; break;
-      case 'capitalize': s.textTransform = 'capitalize'; break;
-      case 'textColor': s.color = value; break;
-      case 'highlight': s.backgroundColor = value; break;
-      case 'fontSize': s.fontSize = value; break;
-      case 'fontFamily': s.fontFamily = value; break;
-    }
-
-    range.insertNode(node);
-    sel.removeAllRanges();
-    updateActiveButtons();
-  }
-
-  // Update active button highlights
-  function updateActiveButtons() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const parent = sel.anchorNode && sel.anchorNode.parentElement;
-    if (!parent) return;
-
-    toolbar.querySelectorAll('button[data-style]').forEach(btn => {
-      const style = btn.getAttribute('data-style');
-      btn.classList.remove('active');
-      switch (style) {
-        case 'bold': if (document.queryCommandState('bold') || parent.closest('b')) btn.classList.add('active'); break;
-        case 'italic': if (document.queryCommandState('italic') || parent.closest('i')) btn.classList.add('active'); break;
-        case 'underline': if (document.queryCommandState('underline') || parent.closest('u')) btn.classList.add('active'); break;
-        case 'strike': if (parent.closest('s')) btn.classList.add('active'); break;
-        case 'sub': if (parent.closest('sub')) btn.classList.add('active'); break;
-        case 'sup': if (parent.closest('sup')) btn.classList.add('active'); break;
-        case 'uppercase': if (parent.style.textTransform === 'uppercase') btn.classList.add('active'); break;
-        case 'lowercase': if (parent.style.textTransform === 'lowercase') btn.classList.add('active'); break;
-        case 'capitalize': if (parent.style.textTransform === 'capitalize') btn.classList.add('active'); break;
-      }
-    });
-  }
-
-  // Button events
-  toolbar.querySelectorAll('button[data-style]').forEach(btn => {
-    const style = btn.getAttribute('data-style');
-    if (!style) return;
-    btn.addEventListener('click', () => applyStyle(style));
-  });
-
-  toolbar.querySelector('#text-color').addEventListener('input', e => applyStyle('textColor', e.target.value));
-  toolbar.querySelector('#bg-color').addEventListener('input', e => applyStyle('highlight', e.target.value));
-  toolbar.querySelector('#font-size').addEventListener('change', e => applyStyle('fontSize', e.target.value));
-  toolbar.querySelector('#font-family').addEventListener('change', e => applyStyle('fontFamily', e.target.value));
-
-  // Keyboard shortcuts
-  document.addEventListener('keydown', e => {
-    if (e.ctrlKey && !e.shiftKey) {
-      switch (e.key.toLowerCase()) {
-        case 'b': e.preventDefault(); applyStyle('bold'); break;
-        case 'i': e.preventDefault(); applyStyle('italic'); break;
-        case 'u': e.preventDefault(); applyStyle('underline'); break;
-        case 'z': e.preventDefault(); undo(); break;
-        case 'y': e.preventDefault(); redo(); break;
-        case '.': e.preventDefault(); applyStyle('sup'); break;
-        case ',': e.preventDefault(); applyStyle('sub'); break;
-      }
-    }
-    if (e.ctrlKey && e.shiftKey) {
-      switch (e.key.toLowerCase()) {
-        case 'z': e.preventDefault(); redo(); break;
-        case 'u': e.preventDefault(); applyStyle('uppercase'); break;
-        case 'l': e.preventDefault(); applyStyle('lowercase'); break;
-        case 'c': e.preventDefault(); applyStyle('capitalize'); break;
-      }
-    }
-    if (e.altKey && e.shiftKey && e.key === '5') e.preventDefault(), applyStyle('strike');
-    setTimeout(updateActiveButtons, 10);
-  });
-
-  // Show toolbar near selection
-  document.addEventListener('mouseup', updateToolbarPosition);
-  document.addEventListener('keyup', updateToolbarPosition);
-
-  function updateToolbarPosition() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) {
-      toolbar.style.opacity = '0';
-      return;
-    }
-    const range = sel.getRangeAt(0).getBoundingClientRect();
-    toolbar.style.top = `${window.scrollY + range.top - toolbar.offsetHeight - 5}px`;
-    toolbar.style.left = `${window.scrollX + range.left}px`;
-    toolbar.style.opacity = '1';
-    updateActiveButtons();
-  }
-
-  // Toolbar CSS
-  const styleEl = document.createElement('style');
-  styleEl.textContent = `
-    #floating-stylings-toolbar button.active { background:#007acc; color:#fff; }
-    #floating-stylings-toolbar button { cursor:pointer; }
-  `;
-  document.head.appendChild(styleEl);
-}
 // --- Google Link Cleaner ---
 document.getElementById("clean-google-links").addEventListener("click", () => {
   exec(() => {
@@ -1517,6 +1332,15 @@ document.getElementById("clean-google-links").addEventListener("click", () => {
     } else {
       alert("ℹ️ No Google redirect links found.");
     }
+  });
+});
+//OCR
+document.getElementById("openOcrTool").addEventListener("click", () => {
+  chrome.windows.create({
+    url: chrome.runtime.getURL("ocr_tool.html"),
+    type: "popup",
+    width: 500,
+    height: 500
   });
 });
 //Table Extracter
@@ -3458,6 +3282,15 @@ if (exportBtn && exportDropdown) {
     }
   });
 })();
+//PDF to HTML
+document.getElementById("openPdfConverterBtn").addEventListener("click", () => {
+  chrome.windows.create({
+    url: chrome.runtime.getURL("pdfConverter.html"),
+    type: "popup",
+    width: 500,
+    height: 600
+  });
+});
 // PDF Downloader
 document.addEventListener("DOMContentLoaded", () => {
   const pdfDownloaderBtn = document.getElementById("pdfDownloaderBtn");
@@ -3532,27 +3365,64 @@ function collectLinksAndShowPopup(modeInput) {
   showFileSelectionPopup(results);
 
   // -------------------- Modal --------------------
-  function showFileSelectionPopup(files) {
-    const existing = document.getElementById("__bulk_download_popup__");
-    if (existing) existing.remove();
+function showFileSelectionPopup(files) {
+  const existing = document.getElementById("__bulk_download_popup__");
+  if (existing) existing.remove();
 
-    const popup = document.createElement("div");
-    popup.id = "__bulk_download_popup__";
-    Object.assign(popup.style,{
-      position:"fixed",top:"15%",left:"5%",transform:"translateX(-50%)",
-      background:"#fff",color:"#000",padding:"12px",borderRadius:"8px",
-      boxShadow:"0 4px 16px rgba(0,0,0,0.3)",zIndex:999999,width:"450px",
-      maxHeight:"60vh",overflowY:"auto",fontFamily:"system-ui,sans-serif",fontSize:"16px",
-      opacity:"0",transition:"opacity 0.4s ease, transform 0.4s ease", transform:"translateY(-20px)"
-    });
-    requestAnimationFrame(()=>{ popup.style.opacity="1"; popup.style.transform="translateY(0)"; });
+  const popup = document.createElement("div");
+  popup.id = "__bulk_download_popup__";
+  Object.assign(popup.style, {
+    position: "fixed",
+    top: "50%",
+    left: "30%",
+    transform: "translate(-50%, -50%)",
+    background: "#fff",
+    color: "#000",
+    padding: "12px",
+    borderRadius: "8px",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+    zIndex: 999999,
+    width: "450px",
+    maxHeight: "65vh",
+    overflowY: "auto",
+    fontFamily: "system-ui,sans-serif",
+    fontSize: "15px",
+    cursor: "move",
+  });
 
-    const header = document.createElement("div");
-Object.assign(header.style, { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px" });
+  // ----- Drag Handling -----
+  let offsetX, offsetY, isDragging = false;
+  popup.addEventListener("mousedown", (e) => {
+    if (e.target.closest("button, input, label")) return; // Ignore clicks on interactive elements
+    isDragging = true;
+    offsetX = e.clientX - popup.offsetLeft;
+    offsetY = e.clientY - popup.offsetTop;
+    popup.style.cursor = "grabbing";
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    popup.style.left = e.clientX - offsetX + "px";
+    popup.style.top = e.clientY - offsetY + "px";
+    popup.style.transform = ""; // disable centering transform during drag
+  });
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+    popup.style.cursor = "move";
+  });
 
+  // Header
+const header = document.createElement("div");
+Object.assign(header.style, { 
+  display: "flex", 
+  justifyContent: "space-between", 
+  alignItems: "center", 
+  marginBottom: "8px" 
+});
+
+// Title with counts
 const title = document.createElement("div");
-title.textContent = "Select Files to Download";
-Object.assign(title.style, { fontWeight:"bold" });
+title.textContent = `Select Files to Download<br>(${files.length} total, 0 selected)`;
+Object.assign(title.style, { fontWeight: "bold" });
 header.appendChild(title);
 
 // Icons container
@@ -3565,22 +3435,29 @@ const createIconButton = (label, tooltip) => {
   const btn = document.createElement("button");
   btn.textContent = label;
   btn.title = tooltip;
-  Object.assign(btn.style, { padding:"2px 6px", cursor:"pointer", border:"none", borderRadius:"4px", background:"#eee", fontWeight:"bold" });
-  btn.onmouseover = () => btn.style.background="#ddd";
-  btn.onmouseleave = () => btn.style.background="#eee";
+  Object.assign(btn.style, { 
+    padding: "2px 6px", 
+    cursor: "pointer", 
+    border: "none", 
+    borderRadius: "4px", 
+    background: "#eee", 
+    fontWeight: "bold" 
+  });
+  btn.onmouseover = () => btn.style.background = "#ddd";
+  btn.onmouseleave = () => btn.style.background = "#eee";
   return btn;
 };
 
 // Download icon
 const downloadBtn = createIconButton("⬇️", "Download Selected");
-downloadBtn.onclick = () => downloadBtnWorkflow(); // call your existing download workflow
+downloadBtn.onclick = () => downloadBtnWorkflow();
 icons.appendChild(downloadBtn);
 
 // Refresh icon
 const refreshBtn = createIconButton("🔄", "Refresh file info");
 refreshBtn.onclick = () => {
   popup.remove();
-  showFileSelectionPopup(files); // re-render popup
+  showFileSelectionPopup(files);
 };
 icons.appendChild(refreshBtn);
 
@@ -3593,73 +3470,289 @@ header.appendChild(icons);
 popup.appendChild(header);
 
 
-    // Select/Deselect buttons
-    const controls = document.createElement("div");
-    controls.style.marginBottom="8px";
-    const selectAllBtn=document.createElement("button");
-    selectAllBtn.textContent="Select All"; selectAllBtn.style.marginRight="6px";
-    selectAllBtn.onclick=()=>popup.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.checked=true);
-    const deselectAllBtn=document.createElement("button");
-    deselectAllBtn.textContent="Deselect All";
-    deselectAllBtn.onclick=()=>popup.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.checked=false);
-    controls.appendChild(selectAllBtn); controls.appendChild(deselectAllBtn);
-    popup.appendChild(controls);
+  // ----- Select/Deselect -----
+const controls = document.createElement("div");
+controls.style.marginBottom = "8px";
 
-    // File list
-    const list = document.createElement("div"); list.style.display="flex"; list.style.flexDirection="column"; list.style.gap="4px";
-    files.forEach(file=>{
-      const row=document.createElement("label");
-      Object.assign(row.style,{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f1f1f1",padding:"4px 6px",borderRadius:"4px"});
+const selectAllBtn = document.createElement("button");
+selectAllBtn.textContent = "Select All";
+selectAllBtn.style.marginRight = "6px";
+selectAllBtn.onclick = () => {
+  popup.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.checked = true;
+    cb.dispatchEvent(new Event("change")); // trigger updateSelectionCount
+  });
+};
 
-      const checkbox=document.createElement("input"); checkbox.type="checkbox"; checkbox.checked=true;
-      checkbox.dataset.url=file.url; checkbox.dataset.filename=file.filename;
+const deselectAllBtn = document.createElement("button");
+deselectAllBtn.textContent = "Deselect All";
+deselectAllBtn.onclick = () => {
+  popup.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.checked = false;
+    cb.dispatchEvent(new Event("change")); // trigger updateSelectionCount
+  });
+};
 
-      const nameSpan=document.createElement("span"); nameSpan.textContent=file.filename;
+controls.appendChild(selectAllBtn);
+controls.appendChild(deselectAllBtn);
+popup.appendChild(controls);
 
-      const infoSpan=document.createElement("span"); infoSpan.style.fontSize="11px"; infoSpan.style.opacity="0.7";
-      infoSpan.textContent="(Fetching...)";
 
-      row.appendChild(checkbox); row.appendChild(nameSpan); row.appendChild(infoSpan);
-      list.appendChild(row);
+  // ----- File List -----
+  const list = document.createElement("div");
+  list.style.display = "flex";
+  list.style.flexDirection = "column";
+  list.style.gap = "4px";
 
-      // Fetch file type & size asynchronously
-      fetch(file.url, { method: "HEAD" })
-        .then(r=>{
-          const size=r.headers.get("content-length");
-          const type=r.headers.get("content-type");
-          infoSpan.textContent=`(${type||"Unknown"}, ${size?formatBytes(+size):"Unknown"})`;
-        }).catch(()=>{ infoSpan.textContent="(Unknown, Unknown)"; });
+  files.forEach((file) => {
+    const row = document.createElement("label");
+    Object.assign(row.style, {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      background: "#f8f8f8",
+      padding: "4px 6px",
+      borderRadius: "4px",
     });
-    popup.appendChild(list);
 
-    // Download button (robust <a> click workflow)
-    function downloadBtnWorkflow() {
-  const selected = [...popup.querySelectorAll("input[type=checkbox]:checked")];
-  if (!selected.length) return alert("No files selected.");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+    checkbox.addEventListener("change", updateSelectionCount);
+    checkbox.dataset.url = file.url;
+    checkbox.dataset.filename = file.filename;
 
-  selected.forEach((cb, i) => {
-    const url = cb.dataset.url;
-    const filename = cb.dataset.filename;
-    setTimeout(() => {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }, i * 300);
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = file.filename;
+    nameSpan.style.flex = "1";
+    nameSpan.style.marginLeft = "8px";
+    nameSpan.style.wordBreak = "break-all";
+
+    const infoSpan = document.createElement("span");
+    infoSpan.style.fontSize = "11px";
+    infoSpan.style.opacity = "0.7";
+    infoSpan.textContent = "(Fetching...)";
+
+    row.appendChild(checkbox);
+    row.appendChild(nameSpan);
+    row.appendChild(infoSpan);
+    list.appendChild(row);
+
+    // Fetch file type & size
+    fetch(file.url, { method: "HEAD" })
+      .then((r) => {
+        const size = r.headers.get("content-length");
+        const type = r.headers.get("content-type");
+        infoSpan.textContent = `(${type || "Unknown"}, ${size ? formatBytes(+size) : "Unknown"})`;
+      })
+      .catch(() => {
+        infoSpan.textContent = "(Unknown)";
+      });
   });
 
-  popup.remove();
-}
-    document.body.appendChild(popup);
+  popup.appendChild(list);
+updateSelectionCount();
+  // ----- Download Workflow -----
+  function downloadBtnWorkflow() {
+    const selected = [...popup.querySelectorAll("input[type=checkbox]:checked")];
+    if (!selected.length) return alert("No files selected.");
 
-    // -------------------- Helper --------------------
-    function formatBytes(bytes) {
-      if (bytes===0) return "0 B";
-      const k=1024, dm=2, sizes=["B","KB","MB","GB"];
-      const i=Math.floor(Math.log(bytes)/Math.log(k));
-      return parseFloat((bytes/Math.pow(k,i)).toFixed(dm))+" "+sizes[i];
+    selected.forEach((cb, i) => {
+      const url = cb.dataset.url;
+      const filename = cb.dataset.filename;
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, i * 300);
+    });
+
+    popup.remove();
+  }
+function updateSelectionCount() {
+  const total = files.length;
+  const selected = popup.querySelectorAll("input[type=checkbox]:checked").length;
+  title.innerHTML = `Select Files to Download<br>(${total} total, ${selected} selected)`;
+}
+  function formatBytes(bytes) {
+    if (bytes === 0) return "0 B";
+    const k = 1024,
+      dm = 2,
+      sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  }
+
+  document.body.appendChild(popup);
+}
+}
+document.querySelectorAll('.tooltip').forEach(el => {
+  const tooltipText = el.getAttribute('data-tip');
+  if (!tooltipText) return;
+
+  const tooltipBox = document.createElement('div');
+  tooltipBox.className = 'tooltip-box';
+  tooltipBox.textContent = tooltipText;
+  document.body.appendChild(tooltipBox);
+
+  el.addEventListener('mouseenter', () => {
+    tooltipBox.classList.add('visible');
+  });
+
+  el.addEventListener('mousemove', e => {
+    const offset = 12; // distance from cursor
+    tooltipBox.style.left = `${e.clientX + offset}px`;
+    tooltipBox.style.top = `${e.clientY + offset}px`;
+  });
+
+  el.addEventListener('mouseleave', () => {
+    tooltipBox.classList.remove('visible');
+  });
+});
+const hero = document.querySelector('.hero-header');
+if (hero) {
+  hero.addEventListener('click', (e) => {
+    if (e.target === hero) {
+      window.open('https://www.cube.global', '_blank', 'noopener,noreferrer');
     }
+  });
+}
+const sidebar = document.querySelector('sidebar-menu');
+const cubeFrame = document.getElementById('cube-logo-frame');
+
+// Function to hide/show cube
+function toggleCube() {
+  // Check if the sidebar has a shadowRoot
+  let isOpen = false;
+
+  if (sidebar.shadowRoot) {
+    // Try to find a class inside shadow DOM that indicates open
+    // Example: sidebar content has 'open' class
+    const content = sidebar.shadowRoot.querySelector('nav, .sidebar-content, .container');
+    if (content) {
+      isOpen = content.classList.contains('open') || content.style.display !== 'none';
+    }
+  } else {
+    // fallback: check attribute
+    isOpen = sidebar.hasAttribute('open');
+  }
+
+  if (isOpen) {
+    cubeFrame.style.opacity = 0;
+    cubeFrame.style.pointerEvents = 'none';
+  } else {
+    cubeFrame.style.opacity = 1;
+    cubeFrame.style.pointerEvents = 'auto';
   }
 }
+
+// Observe mutations in sidebar or shadowRoot
+const observer = new MutationObserver(toggleCube);
+observer.observe(sidebar, { attributes: true, subtree: true, childList: true });
+
+// Initial check
+toggleCube();
+document.addEventListener("DOMContentLoaded", () => {
+  const title = document.querySelector(".forgeit-title-merge");
+  const tagline = document.querySelector(".forgeit-tagline-merge");
+
+  if (!title || !tagline) return;
+
+  // === Logo Magnetic Spring ===
+  const stiffnessLogo = 0.1;  // spring tension
+  const dampingLogo = 0.82;   // friction
+  const targetGap = 2;
+  let gap = 25;
+  let velocity = 0;
+  let animatingLogo = false;
+
+  function runLogoSpring() {
+    if (animatingLogo) return;
+    animatingLogo = true;
+    gap = 25;
+    velocity = 0;
+
+    const step = () => {
+      const force = (targetGap - gap) * stiffnessLogo;
+      velocity = velocity * dampingLogo + force;
+      gap += velocity;
+
+      const time = performance.now();
+      const wobble = Math.sin(time / 120) * velocity * 1.8;
+      const sway = Math.sin(time / 250) * velocity;
+
+      title.style.gap = `${gap}px`;
+      title.style.transform = `translateX(${wobble + sway}px)`;
+
+      if (Math.abs(velocity) > 0.01 || Math.abs(targetGap - gap) > 0.5) {
+        requestAnimationFrame(step);
+      } else {
+        title.style.gap = `${targetGap}px`;
+        title.style.transform = "translateX(0)";
+        animatingLogo = false;
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  // === Tagline Smooth Spring ===
+  const stiffnessTagline = 0.08;
+  const dampingTagline = 0.82;
+  let y = 25;
+  let velocityTagline = 0;
+  let animatingTagline = false;
+
+  function runTaglineSpring() {
+    if (animatingTagline) return;
+    animatingTagline = true;
+    y = 25;
+    velocityTagline = 0;
+
+    const step = () => {
+      const force = (0 - y) * stiffnessTagline;
+      velocityTagline = velocityTagline * dampingTagline + force;
+      y += velocityTagline;
+
+      tagline.style.transform = `translateY(${y}px)`;
+      tagline.style.opacity = 1 - y/30;
+
+      if (Math.abs(velocityTagline) > 0.01 || Math.abs(0 - y) > 0.5) {
+        requestAnimationFrame(step);
+      } else {
+        tagline.style.transform = `translateY(0)`;
+        tagline.style.opacity = 1;
+        animatingTagline = false;
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  // Initial animations after logo entry
+  setTimeout(() => {
+    runLogoSpring();
+    runTaglineSpring();
+  }, 1300);
+
+  // Hover / tap triggers for logo
+  title.addEventListener("mouseenter", runLogoSpring);
+  title.addEventListener("click", runLogoSpring);
+  title.addEventListener("touchstart", runLogoSpring, { passive: true });
+
+  // Optional: hover / tap triggers for tagline
+  tagline.addEventListener("mouseenter", runTaglineSpring);
+  tagline.addEventListener("click", runTaglineSpring);
+  tagline.addEventListener("touchstart", runTaglineSpring, { passive: true });
+});
+document.addEventListener('DOMContentLoaded', () => {
+  featureButtonIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return; // skip if button doesn't exist
+
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active'); // toggle green
+    });
+  });
+});

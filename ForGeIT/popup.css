@@ -143,48 +143,6 @@ button:active,
   transition: transform 0.1s ease;
 }
 
-.info-icon {
-  display: inline-block;
-  margin-left: 8px;
-  font-style: normal;
-  background: var(--accent-color);
-  color: var(--bg-color);
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  line-height: 18px;
-  text-align: center;
-  font-weight: bold;
-  cursor: help;
-  position: relative;
-  user-select: none;
-  font-size: 14px;
-}
-
-.tooltip {
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--card-color);
-  color: var(--text-color); /* font -> text color */
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  z-index: 9999;
-}
-
-.info-icon:focus .tooltip,
-.info-icon:hover .tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
 .toggle-switch {
   display: flex;
   align-items: center;
@@ -1021,41 +979,6 @@ button {
 .button-grid {
   gap: 6px 8px;         /* reduced row/col spacing */
 }
-/* Clickable ForGeIT logo toggle */
-.forgeit-logo {
-  font-size: 22px;
-  font-weight: bold;
-  color: var(--accent-color);
-  cursor: pointer;
-  text-align: center;
-  margin: 10px 0;
-  transition: transform 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
-}
-
-.forgeit-logo.active {
-  color: #28a745; /* green when enabled */
-  transform: scale(1.1) rotate(-2deg);
-  text-shadow: 0 0 8px rgba(40,167,69,0.6); /* glow when active */
-}
-.forgeit-logo {
-  font-size: 22px;
-  font-weight: bold;
-  color: var(--accent-color);
-  cursor: pointer;
-  text-align: center;
-  margin: 10px 0;
-  transition: transform 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
-}
-
-.forgeit-logo.active {
-  color: #28a745; /* green when enabled */
-  transform: scale(1.1) rotate(-2deg);
-  text-shadow: 0 0 8px rgba(40, 167, 69, 0.6); /* glowing effect */
-}
-button.highlightable.active {
-  background-color: #4CAF50; /* green */
-  color: white;
-}
 /* === EXPORT DROPDOWN (Finalized) === */
 .icon-wrapper {
   position: relative;   /* parent controls dropdown positioning */
@@ -1172,7 +1095,6 @@ button.highlightable.active {
   gap: 4px;
   font-size: 13px;
 }
-
 .stylings-popup button {
   padding: 4px 8px;
   margin-right: 2px;
@@ -1184,24 +1106,155 @@ button.highlightable.active {
   color: var(--accent-color);
   cursor: pointer;
 }
-
 .stylings-popup button:hover {
   background: var(--accent-color);
   color: var(--bg-color);
 }
-
 .option-group {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
 }
-
 .stylings-popup.hidden {
   display: none;
 }
-
 .button-group button.active {
   background: var(--accent-color);
   color: var(--bg-color);
+}
+/* === Cube Iframe Default State === */
+#cube-logo-frame {
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  width: 250px;
+  height: 80px;
+  border: none;
+  border-radius: 10px;
+  z-index: 9999;
+  pointer-events: auto;
+  background: transparent;
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Hide scrollbars inside the frame */
+#cube-logo-frame::-webkit-scrollbar {
+  display: none;
+}
+#cube-logo-frame {
+  scrollbar-width: none; /* Firefox */
+}
+
+/* === Ensure sidebar always overlays Cube iframe === */
+.sidebar.show {
+  z-index: 10010 !important;
+}
+
+/* === Hide Cube Iframe and Cube Logo Block when Sidebar Opens === */
+body.sidebar-open #cube-logo-frame,
+body.sidebar-open .cube-logo-block {
+  display: none !important;
+}
+/* === ForGeIT Merge Animation Base === */
+.forgeit-header-merge {
+  text-align: center;
+  padding: 32px 10px 20px;
+  font-family: 'Inter','Segoe UI',Roboto,sans-serif;
+  color: var(--text-color);
+  overflow: hidden;
+}
+
+/* === Logo Title === */
+.forgeit-title-merge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+  font-size: 2.3rem;
+  font-weight: 800;
+  margin: 0;
+  position: relative;
+  cursor: pointer;
+}
+
+.forgeit-title-merge .part {
+  opacity: 0;
+  display: inline-block;
+  transform: translateY(30px);
+}
+
+/* Logo entry animations */
+.forgeit-title-merge .forg {
+  animation: enterLeft .9s cubic-bezier(.25,1,.3,1) .1s forwards;
+}
+.forgeit-title-merge .e {
+  animation: enterCenter .9s cubic-bezier(.25,1,.3,1) .25s forwards;
+}
+.forgeit-title-merge .it {
+  animation: enterRight .9s cubic-bezier(.25,1,.3,1) .4s forwards;
+}
+
+@keyframes enterLeft {
+  from {opacity:0; transform:translateX(-150%) translateY(30px);}
+  to   {opacity:1; transform:translateX(0) translateY(0);}
+}
+@keyframes enterCenter {
+  from {opacity:0; transform:scale(.5) translateY(30px);}
+  to   {opacity:1; transform:scale(1) translateY(0);}
+}
+@keyframes enterRight {
+  from {opacity:0; transform:translateX(150%) translateY(30px);}
+  to   {opacity:1; transform:translateX(0) translateY(0);}
+}
+
+/* === Tagline === */
+.forgeit-tagline-merge {
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 10px;
+  opacity: 0;
+  transform: translateY(25px) scale(0.95);
+  /* We remove old animation here — JS spring will handle it */
+}
+.forgeit-title-merge .e {
+  color: #FFD700; /* bright yellow */
+}
+/* Optional fallback CSS animation if JS fails */
+@keyframes taglineElastic {
+  0% {
+    opacity: 0;
+    transform: translateY(25px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.02);
+  }
+  80% {
+    transform: translateY(2px) scale(0.99);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+/* Reduce spacing between logo and tagline */
+.forgeit-header-merge {
+  padding: 35px 5px 5px; /* reduced bottom padding */
+}
+
+/* Reduce space between letters and tagline */
+.forgeit-tagline-merge {
+  margin-top: 0px;       /* space between logo and tagline */
+  margin-bottom: 0px;    /* reduce space below tagline */
+  font-size: 0.95rem;
+}
+/* Active state for feature buttons */
+button.active {
+  background-color: #28a745 !important; /* green */
+  color: white !important;
+  border-color: #28a745 !important;
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.6);
 }

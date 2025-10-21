@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OCR Image to Text</title>
+  <link rel="stylesheet" href="ocr_tool.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>OCR Image to Text</h2>
+
+    <div class="button-group">
+      <!-- Image Upload -->
+      <input type="file" id="fileInput" accept="image/*" hidden />
+      <button id="uploadBtn" title="Upload an image">Upload Image</button>
+
+      <!-- PDF Upload -->
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+      <button id="uploadPdfBtn" title="Upload a PDF">Upload PDF</button>
+
+      <!-- Paste -->
+      <button id="pasteBtn" title="Paste image from clipboard">Paste from Clipboard</button>
+    </div>
+
+    <!-- Canvas for Image/PDF Page Preview -->
+    <div class="canvas-wrapper">
+      <canvas id="imageCanvas" style="display:none;"></canvas>
+    </div>
+
+    <!-- Small PDF navigation / indicator (hidden unless a PDF is loaded) -->
+    <div id="pdfNav" class="pdf-nav hidden">
+      <span id="prevSmall" class="nav-control" title="Previous page">◀</span>
+      <span id="pdfPageIndicator" class="page-indicator">Page 0 / 0</span>
+      <span id="nextSmall" class="nav-control" title="Next page">▶</span>
+    </div>
+
+    <div class="button-group">
+      <button id="convertBtn">Generate Text from Image</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-container hidden" id="progressWrap">
+      <div id="progressBar"><span id="progressText">0%</span></div>
+    </div>
+
+    <!-- OCR Result -->
+    <textarea id="result" placeholder="Extracted text will appear here..." readonly></textarea>
+
+    <div class="buttons">
+      <button id="copyBtn">Copy</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+<!-- HTML output panel -->
+<div class="html-output-wrap">
+  <textarea id="htmlResult" placeholder="HTML output (<p>...</p>)" readonly></textarea>
+  <button id="copyHtmlBtn">Copy HTML</button>
+</div>
+
+    <footer>
+      Tip: draw a crop area, press Enter to apply. Undo (Ctrl+Z), Redo (Ctrl+Y).
+    </footer>
+  </div>
+
+  <!-- External scripts you should include in your extension folder/website -->
+  <!-- Keep your pdf.js and pdf.worker.js files and load pdf.js here -->
+  <script src="pdf.js"></script>
+  <script src="ocr_tool.js"></script>
+</body>
+</html>

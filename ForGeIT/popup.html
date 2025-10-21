@@ -1,12 +1,30 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <title>ForGeIT</title>
   <link rel="stylesheet" href="popup.css">
   <link rel="stylesheet" href="overrides.css">
   <div id="toast-container"></div>
   <style>
+.logo-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.logo-title img {
+  height: 36px;
+  width: auto;
+}
+
+.logo-title h1 {
+  font-size: 24px;
+  color: var(--accent-color);
+  margin: 0;
+}
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -275,8 +293,18 @@
     <a href="#">About</a>
   </nav>
 </sidebar-menu>
+<!-- Cube Video near Sidebar -->
+<iframe src="logo.html" id="cube-logo-frame"></iframe>
   <div class="card">
-    <h1 align="center">ForGeIT</h1>
+<div class="forgeit-header-merge">
+  <h1 class="forgeit-title-merge">
+    <span class="part forg">ForG</span>
+    <span class="part e">E</span>
+    <span class="part it">IT</span>
+  </h1>
+  <p class="forgeit-tagline-merge">Your Smart HTML Enhancer</p>
+</div>
+
 <input type="text" id="feature-search" placeholder="Search features..." style="
   width: calc(100% - 12px);
   padding: 6px;
@@ -325,9 +353,11 @@
       <button id="hyperlink-injector">Hyperlink Injector</button>
       <button id="activate-content-editor" class="highlightable">Activate Line Break Fixer</button>
       <button id="broken-link-checker">Broken URL Verifier</button>
+      <button id="openOcrTool">OCR Image to Text</button>
       <button id="open-gemini">Open Image to Table Converter</button>
       <button id="activate-image-inserter" class="highlightable">Activate Image Inserter</button>
       <button id="openEditorBtn">Open Table Editor</button>
+      <button id="openPdfConverterBtn">Convert PDF to HTML</button>
     </div>
   </div>
   <div id="footnote-option" class="option-group hidden">
@@ -427,6 +457,13 @@
       <path d="M12 16l4 4-4 4" />
     </svg>
   </button>
+    <!-- Active Panel Toggle Icon -->
+  <button id="activePanelToggle" title="Toggle Active Panel" 
+          style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; 
+                 font-weight:bold; font-size:14px; color:#007acc; border:none; background:none; 
+                 cursor:pointer; transition: transform 0.2s, color 0.2s;">
+    A
+  </button>
   <!-- Copy HTML -->
       <button id="copyHtmlIcon" title="Copy page HTML" class="icon-btn">
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
@@ -475,5 +512,7 @@
     <script src="sidebar-menu.js"></script>
     <script src="htmlhint.min.js"></script>
     <script src="jszip.min.js"></script>
+    <script src="ocr_tool.js"></script>
+    <script src="pdf.min.js"></script>
 </body>
 </html>

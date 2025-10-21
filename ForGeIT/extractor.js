@@ -159,7 +159,7 @@ function toBase64(fileOrBlob) {
 }
 
 async function callGemini(apiKey, base64Data, mimeType) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const prompt = `You are given an image of a table. Return ONLY the clean HTML for that table.
 Rules:
