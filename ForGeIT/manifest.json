@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ForGeIT",
-  "version": "1.2.1",
+  "version": "1.0.2",
   "permissions": [
     "activeTab",
     "scripting",
@@ -19,8 +19,7 @@
     "http://*/*",
     "https://*/*",
     "file:///*",
-    "https://validator.w3.org/nu/*",
-    "https://api.get-text-from-image.work/*"
+    "https://validator.w3.org/nu/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -48,7 +47,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.get-text-from-image.work;"
+    "extension_pages": "script-src 'self'; object-src 'self';"
   },
   "web_accessible_resources": [
     {
