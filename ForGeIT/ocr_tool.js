@@ -64,7 +64,10 @@ const handleSize = 8;
 /* PDF state */
 let pdfDoc = null;
 let currentPage = 1;
-
+function updateNavControls() {
+  document.getElementById("prevSmall").style.opacity = currentPage === 1 ? "0.4" : "1";
+  document.getElementById("nextSmall").style.opacity = currentPage === pdfDoc.numPages ? "0.4" : "1";
+}
 /* ----------------------------
    Utility: show/hide helpers
    ---------------------------- */
@@ -189,8 +192,17 @@ async function renderPdfPage(pageNum) {
   };
   img.src = dataURL;
 
-  pdfPageIndicator.textContent = `Page ${pageNum} / ${pdfDoc.numPages}`;
+  pageInput.value = pageNum;
+  totalPages.textContent = pdfDoc.numPages;
+
   show(pdfNav);
+}
+function updateNavControls() {
+  if (!pdfDoc) return;
+  document.getElementById("prevSmall").style.opacity = currentPage === 1 ? "0.4" : "1";
+  document.getElementById("nextSmall").style.opacity = currentPage === pdfDoc.numPages ? "0.4" : "1";
+  document.getElementById("pageInput").value = currentPage;
+  document.getElementById("totalPages").textContent = pdfDoc.numPages;
 }
 
 /* small helpers */
@@ -200,15 +212,31 @@ function dataURLToFile(dataurl, filename) {
 
 /* PDF nav events */
 prevSmall.addEventListener("click", async () => {
-  if (!pdfDoc || currentPage <= 1) return;
+  if (currentPage <= 1) return;
   currentPage--;
   await renderPdfPage(currentPage);
+  updateNavControls();
 });
 
 nextSmall.addEventListener("click", async () => {
-  if (!pdfDoc || currentPage >= pdfDoc.numPages) return;
+  if (currentPage >= pdfDoc.numPages) return;
   currentPage++;
   await renderPdfPage(currentPage);
+  updateNavControls();
+});
+
+// Manual Page Jump
+pageInput.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter" && pdfDoc) {
+    const pageNum = parseInt(pageInput.value);
+    if (pageNum >= 1 && pageNum <= pdfDoc.numPages) {
+      currentPage = pageNum;
+      await renderPdfPage(currentPage);
+    } else {
+      alert(`Please enter a page number between 1 and ${pdfDoc.numPages}`);
+      pageInput.value = currentPage; // reset
+    }
+  }
 });
 
 /* ----------------------------

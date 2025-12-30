@@ -301,11 +301,21 @@ button.loading::after {
 }
 
 /* Active buttons */
-.active-btn {
-  background: #28a745 !important;
-  color: white !important;
-  border: none !important;
-  box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+/* When a tool is ON */
+button.active {
+  background: linear-gradient(180deg, #3ecf5a, #2fb24a) !important;
+  color: #fff !important;
+  border: 1px solid #2aa443 !important;
+  box-shadow: 0 6px 16px rgba(46,180,81,.35),
+              inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+button.active:hover {
+  filter: brightness(1.04);
+}
+
+button.active:active {
+  transform: scale(.97);
 }
 
 /* Dropdowns, popups */

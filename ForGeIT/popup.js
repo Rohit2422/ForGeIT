@@ -1,3 +1,4 @@
+
 // === Suppress all runtime errors & unhandled rejections ===
 window.onerror = function(message, source, lineno, colno, error) {
   return true; // stops Chrome from logging the error
@@ -220,7 +221,6 @@ function setupFeatureToggle(buttonId, featureLabel) {
   btn.addEventListener("click", () => {
     const isActive = btn.classList.toggle("active");
 
-    // store in sync for persistence
     chrome.storage.sync.get("featureStates", (data) => {
       const states = data.featureStates || {};
       states[featureLabel] = isActive;
@@ -228,19 +228,22 @@ function setupFeatureToggle(buttonId, featureLabel) {
     });
 
     setFeatureState(featureLabel, isActive);
-    //updateActivePanel(); // refresh after toggle
   });
 
   // restore saved state on popup open
   chrome.storage.sync.get("featureStates", (data) => {
-    if (data.featureStates && data.featureStates[featureLabel]) {
+    const states = data.featureStates || {};
+    const isActive = !!states[featureLabel];
+
+    if (isActive) {
       btn.classList.add("active");
-      setFeatureState(featureLabel, true);
-      //updateActivePanel(); // refresh after load
+    } else {
+      btn.classList.remove("active");
     }
+
+    setFeatureState(featureLabel, isActive);
   });
 }
-
 // ============================
 // Popup Initialization
 // ============================
@@ -269,6 +272,11 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFeatureToggle("pdfDownloaderBtn", "PDF Downloader");
   setupFeatureToggle("validate-html-btn", "HTML Validator");
   setupFeatureToggle("broken-link-checker", "Broken Link Checker");
+  setupFeatureToggle("rtl-auto-fix", "RTL Auto Fix");
+  setupFeatureToggle("fixBracketsAI", "RTL Brackets Fix");
+  setupFeatureToggle("rtl-list-fix", "RTL List Fix");
+  setupFeatureToggle("rtl-table-fix", "RTL Table Fix");
+  setupFeatureToggle("rtl-linebreak-fix", "RTL Line-Break Fix");
 
   // 🔹 Ensure panel updates on popup open
   //updateActivePanel();
@@ -459,6 +467,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tocOption = document.getElementById("toc-option");
   const footnoteOption = document.getElementById("footnote-option");
   const footnoteToggleBtn = document.getElementById("footnoteToggleBtn");
+  const rtlToolsOption = document.getElementById("rtl-tools-option");
+  const rtlAutoFixBtn          = document.getElementById("rtl-auto-fix");
+  const rtlPunctuationFixBtn   = document.getElementById("fixBracketsAI");
+  const rtlListFixBtn          = document.getElementById("rtl-list-fix");
+  const rtlTableFixBtn         = document.getElementById("rtl-table-fix");
+  const rtlLinebreakFixBtn     = document.getElementById("rtl-linebreak-fix");
+  // punctuationfix
+  if (rtlPunctuationFixBtn) {
+  rtlPunctuationFixBtn.addEventListener("click", () => {
+    chrome.windows.create({
+      url: chrome.runtime.getURL("aiFixerPopup.html"),
+      type: "popup",
+      width: 360,
+      height: 460
+    });
+  });
+}
   // some pages may not have the toggle etc. - guard
   if (!contentEditorOption) {
     console.warn("contentEditorOption not found in popup DOM");
@@ -481,7 +506,6 @@ chrome.runtime.onMessage.addListener((msg) => {
     //updateActivePanel();
   }
 });
-
 document.getElementById('openEditorBtn').addEventListener('click', () => {
   chrome.windows.create({
     url: chrome.runtime.getURL('editor.html'),
@@ -494,15 +518,15 @@ document.getElementById('openEditorBtn').addEventListener('click', () => {
   const savedToggle = localStorage.getItem("extensionEnabled");
   if (savedToggle === "true") {
     if (toggle) toggle.checked = true;
-    [removerOptions, ulOption, headingOption, contentEditorOption, inlineEditorOption, tableToolsOption, xmtConversionOption, bulkDownloaderOption, htmlValidatorOption, advancedToolsOption, tocOption, footnoteOption].forEach(el => el && (el.style.display = "block"));
+    [removerOptions, ulOption, headingOption, contentEditorOption, inlineEditorOption, tableToolsOption, xmtConversionOption, bulkDownloaderOption, htmlValidatorOption, advancedToolsOption, tocOption, footnoteOption,rtlToolsOption].forEach(el => el && (el.style.display = "block"));
   } else {
-    [removerOptions, ulOption, headingOption, contentEditorOption, inlineEditorOption, tableToolsOption, xmtConversionOption, bulkDownloaderOption, htmlValidatorOption, advancedToolsOption, tocOption, footnoteOption].forEach(el => el && (el.style.display = "none"));
+    [removerOptions, ulOption, headingOption, contentEditorOption, inlineEditorOption, tableToolsOption, xmtConversionOption, bulkDownloaderOption, htmlValidatorOption, advancedToolsOption, tocOption, footnoteOption,rtlToolsOption].forEach(el => el && (el.style.display = "none"));
   }
 
 toggle?.addEventListener("change", async () => {
   const visible = toggle.checked;
   localStorage.setItem("extensionEnabled", visible);
-  [removerOptions, ulOption, headingOption, contentEditorOption, inlineEditorOption, tableToolsOption, xmtConversionOption, bulkDownloaderOption, htmlValidatorOption, advancedToolsOption, tocOption, footnoteOption].forEach(el => {
+  [removerOptions, ulOption, headingOption, contentEditorOption, inlineEditorOption, tableToolsOption, xmtConversionOption, bulkDownloaderOption, htmlValidatorOption, advancedToolsOption, tocOption, footnoteOption,rtlToolsOption].forEach(el => {
     if (el) el.style.display = visible ? "block" : "none";
   });
 
@@ -797,6 +821,897 @@ switch (style) {
         }
         return result;
       }
+    });
+  });
+}
+// ========= 1) Auto RTL Direction Fixer =========
+if (rtlAutoFixBtn) {
+  rtlAutoFixBtn.addEventListener("click", () => {
+    exec(() => {
+
+      document.body.setAttribute("data-rtl-feature-enabled", "true");
+
+      alert(
+        "✍️ RTL toggle mode enabled\n\n" +
+        "• Select paragraph(s)\n" +
+        "• ALT + ←  = add dir=\"rtl\"\n" +
+        "• ALT + →  = remove dir\n" +
+        "• Works on <p> only — tables ignored"
+      );
+
+      if (window.__rtlParagraphToggle__) return;
+      window.__rtlParagraphToggle__ = true;
+
+      document.addEventListener(
+        "keydown",
+        e => {
+          if (!document.body.getAttribute("data-rtl-feature-enabled")) return;
+          if (!e.altKey) return;
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+          const sel = window.getSelection();
+          if (!sel || !sel.rangeCount) return;
+
+          const range = sel.getRangeAt(0);
+
+          const paragraphs = Array.from(document.querySelectorAll("p"));
+
+          const target = paragraphs.filter(p => {
+            if (p.closest("table")) return false;   // ignore table paragraphs
+            const r = document.createRange();
+            r.selectNodeContents(p);
+
+            return (
+              range.compareBoundaryPoints(Range.END_TO_START, r) < 0 &&
+              range.compareBoundaryPoints(Range.START_TO_END, r) > 0
+            );
+          });
+
+          if (!target.length) return;
+
+          target.forEach(p => {
+            // remove styles completely — you requested only dir change
+            p.removeAttribute("style");
+
+            if (e.key === "ArrowLeft") {
+              p.setAttribute("dir", "rtl");
+            }
+
+            if (e.key === "ArrowRight") {
+              p.removeAttribute("dir");
+            }
+          });
+
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        true
+      );
+    });
+  });
+}
+// ========= 4) Universal Multilingual List / Prefix Fixer =========
+if (rtlListFixBtn) {
+  rtlListFixBtn.addEventListener("click", () => {
+    exec(() => {
+      // ---------- Language configuration (≈58 languages) ----------
+      const LANGS = {
+        // RTL + native digits
+        arabic:      { name: "Arabic",      rtl: true,  numbering: "nativeDigits", digits: "٠١٢٣٤٥٦٧٨٩" },
+        persian:     { name: "Persian",     rtl: true,  numbering: "nativeDigits", digits: "۰۱۲۳۴۵۶۷۸۹" },
+        urdu:        { name: "Urdu",        rtl: true,  numbering: "nativeDigits", digits: "۰۱۲۳۴۵۶۷۸۹" },
+        pashto:      { name: "Pashto",      rtl: true,  numbering: "nativeDigits", digits: "۰۱۲۳۴۵۶۷۸۹" },
+        kurdish:     { name: "Kurdish",     rtl: true,  numbering: "nativeDigits", digits: "٠١٢٣٤٥٦٧٨٩" },
+
+        hebrew:      { name: "Hebrew",      rtl: true,  numbering: "hebrewGematria" },
+        yiddish:     { name: "Yiddish",     rtl: true,  numbering: "hebrewGematria" },
+
+        // Indic scripts
+        hindi:       { name: "Hindi",       rtl: false, numbering: "nativeDigits", digits: "०१२३४५६७८९" },
+        sanskrit:    { name: "Sanskrit",    rtl: false, numbering: "nativeDigits", digits: "०१२३४५६७८९" },
+        marathi:     { name: "Marathi",     rtl: false, numbering: "nativeDigits", digits: "०१२३४५६७८९" },
+        nepali:      { name: "Nepali",      rtl: false, numbering: "nativeDigits", digits: "०१२३४५६७८९" },
+        bengali:     { name: "Bengali",     rtl: false, numbering: "nativeDigits", digits: "০১২৩৪৫৬৭৮৯" },
+        assamese:    { name: "Assamese",    rtl: false, numbering: "nativeDigits", digits: "০১২৩৪৫৬৭৮৯" },
+        oriya:       { name: "Odia",        rtl: false, numbering: "nativeDigits", digits: "୦୧୨୩୪୫୬୭୮୯" },
+        gujarati:    { name: "Gujarati",    rtl: false, numbering: "nativeDigits", digits: "૦૧૨૩૪૫૬૭૮૯" },
+        punjabi:     { name: "Punjabi",     rtl: false, numbering: "nativeDigits", digits: "੦੧੨੩੪੫੬੭੮੯" },
+        tamil:       { name: "Tamil",       rtl: false, numbering: "nativeDigits", digits: "௦௧௨௩௪௫௬௭௮௯" },
+        telugu:      { name: "Telugu",      rtl: false, numbering: "nativeDigits", digits: "౦౧౨౩౪౫౬౭౮౯" },
+        kannada:     { name: "Kannada",     rtl: false, numbering: "nativeDigits", digits: "೦೧೨೩೪೫೬೭೮೯" },
+        malayalam:   { name: "Malayalam",   rtl: false, numbering: "nativeDigits", digits: "൦൧൨൩൪൫൬൭൮൯" },
+        sinhala:     { name: "Sinhala",     rtl: false, numbering: "nativeDigits", digits: "෦෧෨෩෪෫෬෭෮෯" },
+
+        // SE Asian scripts
+        thai:        { name: "Thai",        rtl: false, numbering: "nativeDigits", digits: "๐๑๒๓๔๕๖๗๘๙" },
+        lao:         { name: "Lao",         rtl: false, numbering: "nativeDigits", digits: "໐໑໒໓໔໕໖໗໘໙" },
+        myanmar:     { name: "Myanmar",     rtl: false, numbering: "nativeDigits", digits: "၀၁၂၃၄၅၆၇၈၉" },
+        khmer:       { name: "Khmer",       rtl: false, numbering: "nativeDigits", digits: "០១២៣៤៥៦៧៨៩" },
+
+        // CJK – Kanji-style numerals
+        chinese:     { name: "Chinese",     rtl: false, numbering: "cjk" },
+        japanese:    { name: "Japanese",    rtl: false, numbering: "cjk" },
+        korean:      { name: "Korean",      rtl: false, numbering: "cjk" },
+
+        // Vietnamese – western digits
+        vietnamese:  { name: "Vietnamese",  rtl: false, numbering: "western" },
+
+        // Slavic & Cyrillic
+        russian:     { name: "Russian",     rtl: false, numbering: "western" },
+        ukrainian:   { name: "Ukrainian",   rtl: false, numbering: "western" },
+        bulgarian:   { name: "Bulgarian",   rtl: false, numbering: "western" },
+        serbian:     { name: "Serbian",     rtl: false, numbering: "western" },
+        croatian:    { name: "Croatian",    rtl: false, numbering: "western" },
+        bosnian:     { name: "Bosnian",     rtl: false, numbering: "western" },
+        slovenian:   { name: "Slovenian",   rtl: false, numbering: "western" },
+        macedonian:  { name: "Macedonian",  rtl: false, numbering: "western" },
+
+        // Central/Eastern European
+        polish:      { name: "Polish",      rtl: false, numbering: "western" },
+        czech:       { name: "Czech",       rtl: false, numbering: "western" },
+        slovak:      { name: "Slovak",      rtl: false, numbering: "western" },
+        hungarian:   { name: "Hungarian",   rtl: false, numbering: "western" },
+        romanian:    { name: "Romanian",    rtl: false, numbering: "western" },
+
+        // Greek, Turkish, Caucasus
+        greek:       { name: "Greek",       rtl: false, numbering: "western" },
+        turkish:     { name: "Turkish",     rtl: false, numbering: "western" },
+        georgian:    { name: "Georgian",    rtl: false, numbering: "western" },
+        armenian:    { name: "Armenian",    rtl: false, numbering: "western" },
+
+        // Western / Northern Europe
+        english:     { name: "English",     rtl: false, numbering: "western" },
+        spanish:     { name: "Spanish",     rtl: false, numbering: "western" },
+        portuguese:  { name: "Portuguese",  rtl: false, numbering: "western" },
+        french:      { name: "French",      rtl: false, numbering: "western" },
+        german:      { name: "German",      rtl: false, numbering: "western" },
+        italian:     { name: "Italian",     rtl: false, numbering: "western" },
+        dutch:       { name: "Dutch",       rtl: false, numbering: "western" },
+        swedish:     { name: "Swedish",     rtl: false, numbering: "western" },
+        norwegian:   { name: "Norwegian",   rtl: false, numbering: "western" },
+        danish:      { name: "Danish",      rtl: false, numbering: "western" },
+        finnish:     { name: "Finnish",     rtl: false, numbering: "western" },
+        icelandic:   { name: "Icelandic",   rtl: false, numbering: "western" }
+      };
+
+      // ---------- User options (toggles) ----------
+      let optConvertPStart = true;
+      let optConvertTableNumbers = false;
+      let optConvertInlineParagraph = false;
+
+      // ---------- Number formatting helpers ----------
+      function formatWestern(num) {
+        return String(num);
+      }
+
+      function formatNativeDigits(num, digitString) {
+        const digitsArr = digitString.split("");
+        return String(num).replace(/\d/g, d => digitsArr[Number(d)] || d);
+      }
+
+      // Simple Hebrew Gematria for list-style numbers (up to 999)
+      function formatHebrewGematria(num) {
+        if (num <= 0) return String(num);
+
+        const units = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"];
+        const tens  = ["", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ"];
+        const hundreds = ["", "ק", "ר", "ש", "ת", "תק", "תר", "תש", "תת"];
+
+        let n = num;
+        let out = "";
+
+        const h = Math.floor(n / 100);
+        if (h > 0 && h < hundreds.length) {
+          out += hundreds[h];
+          n = n % 100;
+        }
+
+        if (n === 15) return out + "טו";
+        if (n === 16) return out + "טז";
+
+        const t = Math.floor(n / 10);
+        const u = n % 10;
+
+        if (t > 0 && t < tens.length) out += tens[t];
+        if (u > 0 && u < units.length) out += units[u];
+
+        return out || String(num);
+      }
+
+      // CJK Kanji numerals for lists (1–999)
+      function formatCJK(num) {
+        if (num <= 0) return String(num);
+        const d = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+
+        if (num < 10) return d[num];
+
+        if (num < 20) {
+          if (num === 10) return "十";
+          return "十" + d[num - 10];
+        }
+
+        if (num < 100) {
+          const tens = Math.floor(num / 10);
+          const units = num % 10;
+          let s = tens === 1 ? "十" : d[tens] + "十";
+          if (units > 0) s += d[units];
+          return s;
+        }
+
+        if (num < 1000) {
+          const hundreds = Math.floor(num / 100);
+          const rest = num % 100;
+          let s = d[hundreds] + "百";
+          if (rest > 0) s += formatCJK(rest);
+          return s;
+        }
+
+        return String(num);
+      }
+
+      function formatNumber(num, cfg) {
+        if (cfg.numbering === "nativeDigits" && cfg.digits) {
+          return formatNativeDigits(num, cfg.digits);
+        }
+        if (cfg.numbering === "hebrewGematria") {
+          return formatHebrewGematria(num);
+        }
+        if (cfg.numbering === "cjk") {
+          return formatCJK(num);
+        }
+        return formatWestern(num);
+      }
+
+      // ---------- Formatting core ----------
+      function applyFormatting(langKey) {
+        const cfg = LANGS[langKey];
+        if (!cfg) return;
+
+        // ========= 1) LISTS (ul/ol) =========
+        document.querySelectorAll("ul, ol").forEach(list => {
+          const insideTable = !!list.closest("table");
+if (!optConvertTableNumbers && insideTable) return;
+// If inside table & allowed → continue normally
+
+          if (cfg.rtl) {
+            list.style.direction = "rtl";
+            list.style.textAlign = "right";
+            list.style.paddingRight = "1.5em";
+            list.style.paddingLeft = "0";
+          } else {
+            list.style.direction = "ltr";
+            list.style.textAlign = "left";
+            list.style.paddingRight = "0";
+            list.style.paddingLeft = "1.5em";
+          }
+          list.style.listStylePosition = "inside";
+
+          const items = list.querySelectorAll("li");
+          items.forEach(li => {
+            if (!optConvertTableNumbers && li.closest("table")) return;
+            li.style.direction = cfg.rtl ? "rtl" : "ltr";
+            li.style.textAlign = cfg.rtl ? "right" : "left";
+          });
+
+          if (list.tagName === "OL") {
+            list.style.listStyleType = "none";
+            let counter = 1;
+            items.forEach(li => {
+              if (!optConvertTableNumbers && li.closest("table")) return;
+              const originalText = (li.textContent || "").trim();
+              const numStr = formatNumber(counter, cfg);
+              counter += 1;
+              li.textContent = `${numStr}. ${originalText}`;
+            });
+          }
+        });
+
+        // ========= 2) First numeric prefix at start of <p> =========
+        if (optConvertPStart) {
+  const prefixRegex = /^(\s*)(\d+)([\.\)\:\-\–])(\s+)([\s\S]*)$/;
+
+  document.querySelectorAll("p").forEach(p => {
+    if (!optConvertTableNumbers && p.closest("table")) return;
+
+    const txt = p.textContent;
+    const m = txt.match(prefixRegex);
+    if (!m) return;
+
+    const [, ws, numStr, punct, spaceAfter, rest] = m;
+    const num = parseInt(numStr, 10);
+
+    const formatted = formatNumber(num, cfg);
+    p.textContent = `${ws}${formatted}${punct}${spaceAfter}${rest}`;
+  });
+}
+
+        // ========= 3) Inline numbers inside paragraphs =========
+        if (optConvertInlineParagraph) {
+  document.querySelectorAll("p").forEach(p => {
+    if (!optConvertTableNumbers && p.closest("table")) return;
+
+    let html = p.innerHTML;
+
+    // Remove prefix temporarily so it won't be touched
+    const prefixMatch = html.match(/^(\s*\d+[\.\)\:\-\–]\s+)/);
+    let prefix = "";
+    if (prefixMatch) {
+      prefix = prefixMatch[1];
+      html = html.replace(prefixMatch[1], "§§PREFIX§§");
+    }
+
+    // Convert inline numbers (standalone only)
+    html = html.replace(/\b(\d+)\b/g, (m, d) => {
+      const n = parseInt(d, 10);
+      return formatNumber(n, cfg);
+    });
+
+    // Restore prefix untouched
+    html = html.replace("§§PREFIX§§", prefix);
+
+    p.innerHTML = html;
+  });
+}
+
+        // ========= 4) Convert numbers inside table cells =========
+if (optConvertTableNumbers) {
+  document.querySelectorAll("td, th").forEach(cell => {
+    const html = cell.innerHTML;
+
+    // convert numeric prefixes inside table cells
+    const prefixRegex = /^(\s*)(\d+)([\.\)\:\-\–])(\s+)(.*)$/;
+    if (prefixRegex.test(html.trim())) {
+      cell.innerHTML = html.replace(prefixRegex, (m, ws, num, punct, space, rest) => {
+        return ws + formatNumber(parseInt(num, 10), cfg) + punct + space + rest;
+      });
+    }
+
+    // convert inline numbers inside tables
+    const inlineRegex = /\b(\d+)\b/g;
+    cell.innerHTML = cell.innerHTML.replace(inlineRegex, (m, d) => {
+      const n = parseInt(d, 10);
+      if (!Number.isFinite(n)) return m;
+      return formatNumber(n, cfg);
+    });
+  });
+}
+
+        alert("✅ List and paragraph numbering formatted for: " + cfg.name);
+      }
+
+      // ---------- Modal UI (nice popup selector) ----------
+      let currentLangKey = null;
+
+      function ensureLanguageModal() {
+        let overlay = document.getElementById("rtl-lang-modal-overlay");
+        if (overlay) return overlay;
+
+        // Inject minimal CSS
+        const styleId = "rtl-lang-modal-style";
+        if (!document.getElementById(styleId)) {
+          const style = document.createElement("style");
+          style.id = styleId;
+          style.textContent = `
+          #rtl-lang-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          }
+          .rtl-lang-modal {
+            background: #1f1f23;
+            color: #f1f1f1;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            width: 640px;
+            max-width: 95vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
+          .rtl-lang-modal-header {
+            padding: 14px 18px 8px;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+          }
+          .rtl-lang-modal-sub {
+            padding: 0 18px 10px;
+            font-size: 13px;
+            color: #cccccc;
+          }
+          .rtl-lang-modal-search {
+            padding: 0 18px 10px;
+          }
+          .rtl-lang-modal-search input {
+            width: 100%;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: #111218;
+            color: #f1f1f1;
+            font-size: 13px;
+            outline: none;
+          }
+          .rtl-lang-modal-search input:focus {
+            border-color: #ffb3d9;
+            box-shadow: 0 0 0 1px rgba(255,179,217,0.4);
+          }
+          .rtl-lang-modal-body {
+            padding: 0 18px 10px;
+            overflow: auto;
+            flex: 1 1 auto;
+          }
+          .rtl-lang-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 6px;
+            padding-bottom: 6px;
+          }
+          .rtl-lang-option {
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.3;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: #262632;
+            color: #f5f5f5;
+            cursor: pointer;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.15s, border-color 0.15s, transform 0.05s;
+          }
+          .rtl-lang-option:hover {
+            background: #343448;
+            border-color: rgba(255,255,255,0.35);
+          }
+          .rtl-lang-option.selected {
+            background: #ff4b9a;
+            border-color: #ff96c8;
+            color: #1b0a16;
+            transform: translateY(-1px);
+          }
+          .rtl-lang-modal-footer {
+            padding: 10px 18px 14px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+          }
+          .rtl-lang-btn {
+            min-width: 80px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 13px;
+            cursor: pointer;
+          }
+          .rtl-lang-btn-cancel {
+            background: transparent;
+            color: #f1f1f1;
+            border-color: rgba(255,255,255,0.25);
+          }
+          .rtl-lang-btn-cancel:hover {
+            background: rgba(255,255,255,0.06);
+          }
+          .rtl-lang-btn-ok {
+            background: #ff4b9a;
+            color: #1b0a16;
+            border-color: #ff96c8;
+            font-weight: 600;
+          }
+          .rtl-lang-btn-ok:hover {
+            filter: brightness(1.05);
+          }
+          `;
+          document.head.appendChild(style);
+        }
+
+        overlay = document.createElement("div");
+        overlay.id = "rtl-lang-modal-overlay";
+
+        const modal = document.createElement("div");
+        modal.className = "rtl-lang-modal";
+
+        const header = document.createElement("div");
+        header.className = "rtl-lang-modal-header";
+        header.textContent = "Select language for numbering & list formatting";
+
+        const sub = document.createElement("div");
+        sub.className = "rtl-lang-modal-sub";
+        sub.textContent = "Configure what to convert, then choose a language.";
+
+        const searchWrap = document.createElement("div");
+        searchWrap.className = "rtl-lang-modal-search";
+        const searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.placeholder = "Search language…";
+        searchWrap.appendChild(searchInput);
+
+        // Options panel (toggles) – between search bar and language grid
+        const optionsPanel = document.createElement("div");
+        optionsPanel.style.padding = "4px 18px 10px";
+        optionsPanel.style.display = "flex";
+        optionsPanel.style.flexDirection = "column";
+        optionsPanel.style.gap = "4px";
+        optionsPanel.style.fontSize = "13px";
+
+        function createToggle(label, initial, onChange) {
+          const row = document.createElement("label");
+          row.style.display = "flex";
+          row.style.alignItems = "center";
+          row.style.gap = "8px";
+          row.style.cursor = "pointer";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = initial;
+          cb.style.cursor = "pointer";
+
+          cb.addEventListener("change", () => onChange(cb.checked));
+
+          const span = document.createElement("span");
+          span.textContent = label;
+
+          row.appendChild(cb);
+          row.appendChild(span);
+          return row;
+        }
+
+        optionsPanel.appendChild(
+          createToggle("Convert number prefix at start of paragraphs (<p>)", optConvertPStart, v => optConvertPStart = v)
+        );
+        optionsPanel.appendChild(
+          createToggle("Convert numbers inside tables (<table>)", optConvertTableNumbers, v => optConvertTableNumbers = v)
+        );
+        optionsPanel.appendChild(
+          createToggle("Convert inline numbers inside paragraphs", optConvertInlineParagraph, v => optConvertInlineParagraph = v)
+        );
+
+        const body = document.createElement("div");
+        body.className = "rtl-lang-modal-body";
+        const optionsWrap = document.createElement("div");
+        optionsWrap.className = "rtl-lang-options";
+
+        const langKeys = Object.keys(LANGS);
+        langKeys.forEach(key => {
+          const cfg = LANGS[key];
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "rtl-lang-option";
+          btn.dataset.langKey = key;
+          const label = `${cfg.name} (${key})${cfg.rtl ? " • RTL" : ""}`;
+          btn.dataset.label = label.toLowerCase();
+          btn.textContent = label;
+          optionsWrap.appendChild(btn);
+        });
+
+        body.appendChild(optionsWrap);
+
+        const footer = document.createElement("div");
+        footer.className = "rtl-lang-modal-footer";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "rtl-lang-btn rtl-lang-btn-cancel";
+        cancelBtn.textContent = "Cancel";
+
+        const okBtn = document.createElement("button");
+        okBtn.type = "button";
+        okBtn.className = "rtl-lang-btn rtl-lang-btn-ok";
+        okBtn.textContent = "OK";
+
+        footer.appendChild(cancelBtn);
+        footer.appendChild(okBtn);
+
+        modal.appendChild(header);
+        modal.appendChild(sub);
+        modal.appendChild(searchWrap);
+        modal.appendChild(optionsPanel);
+        modal.appendChild(body);
+        modal.appendChild(footer);
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Event wiring
+        function closeModal() {
+          overlay.style.display = "none";
+        }
+
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) {
+            closeModal();
+          }
+        });
+
+        cancelBtn.addEventListener("click", () => {
+          closeModal();
+        });
+
+        optionsWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".rtl-lang-option");
+          if (!btn) return;
+          const key = btn.dataset.langKey;
+          currentLangKey = key;
+
+          optionsWrap.querySelectorAll(".rtl-lang-option.selected")
+            .forEach(el => el.classList.remove("selected"));
+          btn.classList.add("selected");
+        });
+
+        okBtn.addEventListener("click", () => {
+          if (!currentLangKey) {
+            alert("Please select a language.");
+            return;
+          }
+          closeModal();
+          applyFormatting(currentLangKey);
+        });
+
+        searchInput.addEventListener("input", () => {
+          const q = searchInput.value.trim().toLowerCase();
+          optionsWrap.querySelectorAll(".rtl-lang-option").forEach(btn => {
+            const label = btn.dataset.label || "";
+            btn.style.display = label.includes(q) ? "" : "none";
+          });
+        });
+
+        return overlay;
+      }
+
+      function openLanguageModal() {
+        const overlay = ensureLanguageModal();
+        overlay.style.display = "flex";
+      }
+
+      openLanguageModal();
+    });
+  });
+}
+// ========= 5) RTL Table Preview & Direction Corrector =========
+if (rtlTableFixBtn) {
+  rtlTableFixBtn.addEventListener("click", () => {
+    exec(() => {
+
+      // ==========================================
+      // TABLE TEXT + POSITION CONTROLS
+      // ALT + ARROWS  -> text direction (cells only)
+      // CTRL + ALT -> left/right position (no CSS)
+      // ==========================================
+
+      function getClosestTableFromSelection() {
+        const sel = window.getSelection();
+        if (!sel || !sel.anchorNode) return null;
+
+        let node = sel.anchorNode;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+
+        while (node && node !== document.body) {
+          if (node.tagName?.toLowerCase() === "table") return node;
+          node = node.parentElement;
+        }
+        return null;
+      }
+
+      // ---------- TEXT DIRECTION ----------
+      function applyDirectionToTable(table, dir) {
+        if (!table) return;
+        table.querySelectorAll("th, td, p, div, span").forEach(el => {
+          el.setAttribute("dir", dir);
+        });
+      }
+
+      // ---------- POSITION (NO CSS) ----------
+      function wrapTable(table, side) {
+        if (!table) return;
+
+        // If already wrapped → unwrap
+        if (table.parentElement?.dataset?.tableWrapper === "1") {
+          const wrapperCell = table.parentElement;
+          const wrapper = wrapperCell.parentElement?.parentElement;
+          wrapper.replaceWith(table);
+        }
+
+        // Remember original location
+        const originalParent = table.parentNode;
+        const nextSibling = table.nextSibling;
+
+        // Wrapper (full width, one cell)
+        const wrapper = document.createElement("table");
+        wrapper.dataset.tableWrapper = "1";
+        wrapper.setAttribute("width", "100%");
+
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+
+        td.setAttribute("align", side === "right" ? "right" : "left");
+
+        td.appendChild(table);
+        tr.appendChild(td);
+        wrapper.appendChild(tr);
+
+        // Put wrapper back in the same place
+        if (nextSibling) originalParent.insertBefore(wrapper, nextSibling);
+        else originalParent.appendChild(wrapper);
+      }
+
+      document.addEventListener(
+        "keydown",
+        e => {
+          const table = getClosestTableFromSelection();
+          if (!table) return;
+
+          // --- ALT + ARROWS (TEXT DIRECTION) ---
+          if (e.altKey && !e.ctrlKey) {
+            if (e.key === "ArrowLeft") {
+              applyDirectionToTable(table, "rtl");
+              e.preventDefault();
+              e.stopPropagation();
+            }
+
+            if (e.key === "ArrowRight") {
+              applyDirectionToTable(table, "ltr");
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+
+          // --- CTRL + ALT + ARROWS (POSITION) ---
+          if (e.altKey && e.ctrlKey) {
+            if (e.key === "ArrowRight") {
+              wrapTable(table, "right");
+              e.preventDefault();
+              e.stopPropagation();
+            }
+
+            if (e.key === "ArrowLeft") {
+              wrapTable(table, "left");
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+        },
+        true
+      );
+
+      alert(
+        "ALT + ←  = RTL (text only)\n" +
+        "ALT + →  = LTR\n" +
+        "CTRL + ALT + → = table RIGHT\n" +
+        "CTRL + ALT + ← = table LEFT\n" +
+        "(No CSS, no column collapse, no wrapping)"
+      );
+    });
+  });
+}
+
+  // ========= 6) RTL Line-Break Intelligent Fixer =========
+if (rtlLinebreakFixBtn) {
+  rtlLinebreakFixBtn.addEventListener("click", () => {
+    exec(() => {
+
+      // avoid duplicate activation
+      if (window.__rtlEditorMode__) {
+        alert("✍️ RTL edit mode is already enabled.");
+        return;
+      }
+      window.__rtlEditorMode__ = true;
+
+      // make the whole page editable (so cursor appears)
+      document.designMode = "on";
+      document.body.contentEditable = "true";
+
+      alert(
+        "✍️ RTL Edit Mode Enabled\n\n" +
+        "• Click anywhere — cursor will appear\n" +
+        "• ENTER = split line\n" +
+        "• BACKSPACE (at start) = merge line\n" +
+        "• Space / typing works normally"
+      );
+
+      // ===============================
+      // ENTER — SPLIT PARAGRAPH
+      // ===============================
+      document.addEventListener(
+        "keydown",
+        e => {
+          if (e.key !== "Enter") return;
+
+          const sel = window.getSelection();
+          if (!sel || !sel.rangeCount) return;
+
+          const range = sel.getRangeAt(0);
+          if (!range.collapsed) return;
+
+          // climb to <p>
+          let p = range.startContainer;
+          while (p && p !== document.body && (!p.tagName || p.tagName.toLowerCase() !== "p")) {
+            p = p.parentNode;
+          }
+          if (!p) return;
+
+          const text = p.innerText;
+          const pos = range.startOffset;
+
+          const left = text.slice(0, pos).trimEnd();
+          const right = text.slice(pos).trimStart();
+
+          if (!left || !right) return;
+
+          const p1 = p.cloneNode(false);
+          const p2 = p.cloneNode(false);
+
+          p1.textContent = left;
+          p2.textContent = right;
+
+          p.parentNode.insertBefore(p1, p);
+          p.parentNode.insertBefore(p2, p);
+          p.remove();
+
+          const newRange = document.createRange();
+          newRange.setStart(p2.firstChild, 0);
+          newRange.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        true
+      );
+
+      // ===============================
+      // BACKSPACE — MERGE LINES
+      // ===============================
+      document.addEventListener(
+        "keydown",
+        e => {
+          if (e.key !== "Backspace") return;
+
+          const sel = window.getSelection();
+          if (!sel || !sel.rangeCount) return;
+
+          const range = sel.getRangeAt(0);
+          if (!range.collapsed) return;
+
+          // climb to <p>
+          let p = range.startContainer;
+          while (p && p !== document.body && (!p.tagName || p.tagName.toLowerCase() !== "p")) {
+            p = p.parentNode;
+          }
+          if (!p) return;
+
+          // only if cursor is at start of paragraph
+          if (range.startOffset !== 0) return;
+
+          const prev = p.previousElementSibling;
+          if (!prev || prev.tagName.toLowerCase() !== "p") return;
+
+          prev.textContent =
+            prev.textContent.trimEnd() + " " + p.textContent.trimStart();
+
+          const newRange = document.createRange();
+          newRange.setStart(prev.firstChild, prev.firstChild.textContent.length);
+          newRange.collapse(true);
+
+          p.remove();
+
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        true
+      );
     });
   });
 }

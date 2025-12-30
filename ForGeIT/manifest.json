@@ -19,7 +19,8 @@
     "http://*/*",
     "https://*/*",
     "file:///*",
-    "https://validator.w3.org/nu/*"
+    "https://validator.w3.org/nu/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -69,6 +70,8 @@
         "editor.css",
         "ocr_tool.css",
         "popup.css",
+        "aiFixerPopup.js",
+        "aiFixerPopup.html",
         "sidebar-menu.js",
         "activePanel.js",
         "htmlhint.min.js",

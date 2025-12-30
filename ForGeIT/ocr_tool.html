@@ -29,11 +29,24 @@
     </div>
 
     <!-- Small PDF navigation / indicator (hidden unless a PDF is loaded) -->
-    <div id="pdfNav" class="pdf-nav hidden">
-      <span id="prevSmall" class="nav-control" title="Previous page">◀</span>
-      <span id="pdfPageIndicator" class="page-indicator">Page 0 / 0</span>
-      <span id="nextSmall" class="nav-control" title="Next page">▶</span>
-    </div>
+    <!-- PDF Navigation with Page Input -->
+<div id="pdfNav" class="pdf-nav hidden" 
+     style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;">
+  <span id="prevSmall" class="nav-control" title="Previous page">◀</span>
+
+  <input 
+    type="number" 
+    id="pageInput" 
+    value="1" 
+    min="1" 
+    class="page-input"
+  />
+  <span class="page-count">/ <span id="totalPages">0</span></span>
+
+  <span id="nextSmall" class="nav-control" title="Next page">▶</span>
+</div>
+
+
 
     <div class="button-group">
       <button id="convertBtn">Generate Text from Image</button>
