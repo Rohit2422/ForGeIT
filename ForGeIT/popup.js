@@ -1,4 +1,10 @@
-
+// 🔄 Reset all feature states on page reload
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "loading") {
+    chrome.storage.sync.set({ featureStates: {} });
+    chrome.storage.local.set({ activeFeatures: [] });
+  }
+});
 // === Suppress all runtime errors & unhandled rejections ===
 window.onerror = function(message, source, lineno, colno, error) {
   return true; // stops Chrome from logging the error
@@ -18,6 +24,55 @@ async function getOrPickFolder() {
   } catch (err) {
     throw err;
   }
+}
+function showPageToast(tabId, message, type = "success") {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    func: (msg, toastType) => {
+      // remove existing
+      const old = document.getElementById("__forgeit_toast__");
+      if (old) old.remove();
+
+      const toast = document.createElement("div");
+      toast.id = "__forgeit_toast__";
+      toast.textContent = msg;
+
+      Object.assign(toast.style, {
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        padding: "10px 14px",
+        fontSize: "13px",
+        borderRadius: "6px",
+        color: "#fff",
+        zIndex: 2147483647,
+        boxShadow: "0 4px 12px rgba(0,0,0,.25)",
+        background:
+          toastType === "success"
+            ? "#28a745"
+            : toastType === "error"
+            ? "#dc3545"
+            : "#007acc",
+        opacity: "0",
+        transform: "translateY(10px)",
+        transition: "all .25s ease"
+      });
+
+      document.body.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(0)";
+      });
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(10px)";
+        setTimeout(() => toast.remove(), 250);
+      }, 1800);
+    },
+    args: [message, type]
+  });
 }
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('toolbar-main-btn');
@@ -248,10 +303,17 @@ function setupFeatureToggle(buttonId, featureLabel) {
 // Popup Initialization
 // ============================
 document.addEventListener("DOMContentLoaded", () => {
+
+  // 🔁 HARD RESET all feature buttons on popup open
+document.querySelectorAll("[data-feature]").forEach(btn => {
+  btn.classList.remove("active");
+});
+
   // Register feature buttons
   setupFeatureToggle("highlight-btn", "Highlight");
   setupFeatureToggle("clear-btn", "Clear Highlight");
   setupFeatureToggle("remove-style-btn", "Remove Styles");
+  setupFeatureToggle("xml-to-html", "XML → HTML Converter");
   setupFeatureToggle("remove-attributes", "Remove Classes & IDs");
   setupFeatureToggle("remove-span-btn", "Remove <span>");
   setupFeatureToggle("organize", "Organize HTML");
@@ -265,6 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFeatureToggle("save-content-editor", "Save Content Editor");
   setupFeatureToggle("activate-hyperlink-injector", "Hyperlink Injector");
   setupFeatureToggle("clean-google-links", "Hyperlink Cleaner");
+  setupFeatureToggle("lossless-cleaner", "Lossless HTML Cleaner");
   setupFeatureToggle("activate-image-inserter", "Image Inserter");
   setupFeatureToggle("open-gemini", "Image → Table Converter");
   setupFeatureToggle("openEditorBtn", "Table Editor");
@@ -281,61 +344,100 @@ document.addEventListener("DOMContentLoaded", () => {
   // 🔹 Ensure panel updates on popup open
   //updateActivePanel();
 
-  // Save & Proceed handler
-  const saveProceedBtn = document.getElementById("saveProceedBtn");
-  if (saveProceedBtn) {
-    saveProceedBtn.addEventListener("click", async () => {
-      try {
-        // Run page cleanup inside active tab
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) {
-          await chrome.scripting.executeScript({
-  target: { tabId: tab.id },
-  func: () => {
-    localStorage.removeItem("headingMode");
-    localStorage.removeItem("contentEditorMode");
-    localStorage.removeItem("imageInserter");
+// Save & Proceed handler
+const saveProceedBtn = document.getElementById("saveProceedBtn");
 
-    // properly disable hyperlink injector
-    if (typeof disableHyperlinkInjector === "function") {
-      disableHyperlinkInjector();
-    }
+if (saveProceedBtn) {
+  saveProceedBtn.addEventListener("click", async () => {
+    let tab;
 
-    document.querySelectorAll("[contenteditable='true']").forEach(el => {
-      el.removeAttribute("contenteditable");
-      el.style.outline = "";
-      el.style.cursor = "";
-    });
-    window.__inlineEditing = false;
-  }
-});
-        }
+    try {
+      // Active tab
+      [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-        alert("✅ All changes saved on page. You may proceed.");
+      if (tab?.id) {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            // Clear editor flags
+            localStorage.removeItem("headingMode");
+            localStorage.removeItem("contentEditorMode");
+            localStorage.removeItem("imageInserter");
 
-        // Reset popup buttons
-        document.querySelectorAll("[data-feature]").forEach(btn => {
-          btn.classList.remove("active");
+            // Disable hyperlink injector safely
+            if (typeof disableHyperlinkInjector === "function") {
+              disableHyperlinkInjector();
+            }
+
+            // Remove all contenteditable
+            document.querySelectorAll("[contenteditable='true']").forEach(el => {
+              el.removeAttribute("contenteditable");
+              el.style.outline = "";
+              el.style.cursor = "";
+            });
+
+            // Reset globals
+            window.__inlineEditing = false;
+          }
         });
-
-        // Clear storage states
-        chrome.storage.sync.set({ featureStates: {} });
-        chrome.storage.local.set({ activeFeatures: [] });
-
-        // Refresh active panel
-        //updateActivePanel();
-
-      } catch (err) {
-        console.error("Save & Proceed failed:", err);
-        alert("⚠️ Save failed: " + (err && err.message ? err.message : err));
       }
-    });
-  }
+
+      // 🟢 Success feedback
+      if (tab?.id) {
+        showPageToast(
+          tab.id,
+          "All changes saved. You may proceed.",
+          "success"
+        );
+      }
+
+      // Reset popup button states
+      document.querySelectorAll("[data-feature]").forEach(btn => {
+        btn.classList.remove("active");
+      });
+
+      // Clear storage states
+      chrome.storage.sync.set({ featureStates: {} });
+      chrome.storage.local.set({ activeFeatures: [] });
+
+      // Optional: refresh active panel
+      // updateActivePanel();
+
+    } catch (err) {
+      console.error("Save & Proceed failed:", err);
+
+      if (tab?.id) {
+        showPageToast(
+          tab.id,
+          "Save failed. See console for details.",
+          "error"
+        );
+      }
+    }
+  });
+}
 });
 
 console.log("popup.js with Active Panel (list only) loaded ✅");
 console.log("popup.js loaded ✅");
+// ===============================
+// STATUS MESSAGE (TOP CENTER)
+// ===============================
+
 document.addEventListener("DOMContentLoaded", async () => {
+  window.showStatusMessage = function (text) {
+  const el = document.getElementById("status-message");
+  if (!el) return;
+
+  el.textContent = text;
+  el.classList.remove("hidden");
+  el.classList.add("show");
+
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.classList.add("hidden"), 250);
+  }, 1500);
+};
   function initVersionHistory(tabId) {
   chrome.scripting.executeScript({
     target: { tabId },
@@ -539,28 +641,33 @@ toggle?.addEventListener("change", async () => {
 });
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  const exec = (func) => {
-  // First save a snapshot of current page before applying changes
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: () => {
-      if (window.__versionHistory) {
-        const html = document.body.innerHTML;
-        if (window.__versionHistory.index < window.__versionHistory.stack.length - 1) {
-          window.__versionHistory.stack = window.__versionHistory.stack.slice(0, window.__versionHistory.index + 1);
+const exec = (func) => {
+  return new Promise((resolve) => {
+    chrome.scripting.executeScript(
+      {
+        target: { tabId: tab.id },
+        func: () => {
+          if (window.__versionHistory) {
+            const html = document.body.innerHTML;
+            if (window.__versionHistory.index < window.__versionHistory.stack.length - 1) {
+              window.__versionHistory.stack =
+                window.__versionHistory.stack.slice(0, window.__versionHistory.index + 1);
+            }
+            window.__versionHistory.stack.push(html);
+            window.__versionHistory.index++;
+          }
         }
-        window.__versionHistory.stack.push(html);
-        window.__versionHistory.index++;
-        console.log("💾 Snapshot saved before feature execution");
+      },
+      () => {
+        chrome.scripting.executeScript(
+          { target: { tabId: tab.id }, func },
+          resolve
+        );
       }
-    }
-  }, () => {
-    // Then run the feature function
-    chrome.scripting.executeScript({ target: { tabId: tab.id }, func });
+    );
   });
-
-  showSaveBtn();
 };
+
 if (footnoteToggleBtn) {
   // Restore saved state
   chrome.storage.local.get("footnoteExtensionEnabled", (data) => {
@@ -648,46 +755,59 @@ function safeUpdatePanel() {
         document.querySelectorAll("[style]").forEach(el => {
           el.removeAttribute("style");
         });
-        alert(" All inline styles removed.");
+        showPageToast(tab.id, "All inline styles removed", "success");
       });
     });
   }
 
 if (removeAttrBtn) {
-  removeAttrBtn.addEventListener("click", () => {
-    exec(() => {
+  removeAttrBtn.addEventListener("click", async () => {
+
+    await exec(() => {
       document.querySelectorAll("*").forEach(el => {
         const cls = el.getAttribute("class");
         const id  = el.getAttribute("id");
 
-        // Remove all class attributes except footnote-related
         if (cls && !cls.toLowerCase().includes("footnote")) {
           el.removeAttribute("class");
         }
 
-        // Remove ID only if it matches ^h.* (starts with "h")
         if (id && /^h.*/i.test(id)) {
           el.removeAttribute("id");
         }
       });
-
-      alert('Removed all "class" attributes (except footnotes) and IDs starting with "h".');
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "Classes & IDs removed successfully",
+      "success"
+    );
+  });
+}
+if (removeSpanBtn) {
+  removeSpanBtn.addEventListener("click", async () => {
+
+    await exec(() => {
+      document.querySelectorAll("span").forEach(span => {
+        const parent = span.parentNode;
+        while (span.firstChild) parent.insertBefore(span.firstChild, span);
+        parent.removeChild(span);
+      });
+    });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "All <span> tags removed successfully",
+      "success"
+    );
   });
 }
 
-  if (removeSpanBtn) {
-    removeSpanBtn.addEventListener("click", () => {
-      exec(() => {
-        document.querySelectorAll("span").forEach(span => {
-          const parent = span.parentNode;
-          while (span.firstChild) parent.insertBefore(span.firstChild, span);
-          parent.removeChild(span);
-        });
-        alert(" All <span> tags removed.");
-      });
-    });
-  }
 // Search Bar
 const searchInput = document.getElementById("feature-search");
 
@@ -709,61 +829,72 @@ searchInput.addEventListener("input", () => {
     group.style.display = visibleButtons.length ? "block" : "none";
   });
 });
+// NEW FEATURE: Organize all tags (skip tables & formatting tags)
+if (organizeHtmlBtn) {
+  organizeHtmlBtn.addEventListener("click", async () => {
 
-
-//  NEW FEATURE: Organize all tags (skip tables & formatting tags)
-  if (organizeHtmlBtn) {
-  organizeHtmlBtn.addEventListener("click", () => {
-    exec(() => {
-      // Equivalent of flatten_html_except_tables
+    await exec(() => {
       const tableTags = new Set(["TABLE","THEAD","TBODY","TFOOT","TR","TD","TH"]);
 
       document.querySelectorAll("body *").forEach(el => {
-        if (tableTags.has(el.tagName)) return; // skip table-related tags
+        if (tableTags.has(el.tagName)) return;
 
-        // Flatten text nodes inside non-table tags
+        // Flatten text nodes
         el.childNodes.forEach(node => {
           if (node.nodeType === Node.TEXT_NODE) {
-            const flattened = node.textContent.split(/\s+/).join(" ").trim();
-            node.textContent = flattened;
+            node.textContent = node.textContent
+              .split(/\s+/)
+              .join(" ")
+              .trim();
           }
         });
 
-        // Clean innerHTML for non-table elements (remove line breaks)
+        // Remove line breaks (excluding tables)
         if (![...el.querySelectorAll("*")].some(c => tableTags.has(c.tagName))) {
           el.innerHTML = el.innerHTML.replace(/\n+/g, "").trim();
         }
       });
-
-      alert("✅ HTML flattened (tables preserved).");
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "HTML flattened (tables preserved)",
+      "success"
+    );
   });
 }
 //&nbsp;
 const removeNbspBtn = document.getElementById("remove-nbsp-btn");
 
 if (removeNbspBtn) {
-  removeNbspBtn.addEventListener("click", () => {
-    exec(() => {
-      // Replace all non-breaking spaces (&nbsp; = \u00A0) with normal spaces
-      document.querySelectorAll("body *").forEach(el => {
-        if (el.childNodes.length) {
-          el.childNodes.forEach(node => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              node.textContent = node.textContent.replace(/\u00A0/g, "");
-            }
-          });
-        }
-      });
+  removeNbspBtn.addEventListener("click", async () => {
 
-      alert("✅ All non-breaking spaces (&nbsp;) removed.");
+    await exec(() => {
+      // Replace all non-breaking spaces (&nbsp; = \u00A0)
+      document.querySelectorAll("body *").forEach(el => {
+        el.childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            node.textContent = node.textContent.replace(/\u00A0/g, "");
+          }
+        });
+      });
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "All non-breaking spaces (&nbsp;) removed",
+      "success"
+    );
   });
 }
-
 if (removeUlLiBtn) {
-  removeUlLiBtn.addEventListener("click", () => {
-    exec(() => {
+  removeUlLiBtn.addEventListener("click", async () => {
+
+    await exec(() => {
       document.querySelectorAll("ul, ol").forEach(list => {
         const parent = list.parentNode;
         const isOrdered = list.tagName === "OL";
@@ -775,25 +906,23 @@ if (removeUlLiBtn) {
           let prefix = "";
 
           if (isOrdered) {
-            // Ordered list numbering
             const num = start + idx;
             switch (type) {
               case "1": prefix = num + ". "; break;
-              case "a": prefix = String.fromCharCode(97 + (num - 1)) + ". "; break; // a, b, c
-              case "A": prefix = String.fromCharCode(65 + (num - 1)) + ". "; break; // A, B, C
-              case "i": prefix = toRoman(num).toLowerCase() + ". "; break; // i, ii, iii
-              case "I": prefix = toRoman(num).toUpperCase() + ". "; break; // I, II, III
+              case "a": prefix = String.fromCharCode(97 + num - 1) + ". "; break;
+              case "A": prefix = String.fromCharCode(65 + num - 1) + ". "; break;
+              case "i": prefix = toRoman(num).toLowerCase() + ". "; break;
+              case "I": prefix = toRoman(num).toUpperCase() + ". "; break;
               default:  prefix = num + ". ";
             }
           } else {
-            // Unordered list → preserve bullet type
-const style = getComputedStyle(list).listStyleType;
-switch (style) {
-  case "disc":   prefix = "\u2022 "; break; // •
-  case "circle": prefix = "\u25CB "; break; // ○
-  case "square": prefix = "\u25AA "; break; // ▪
-  default:       prefix = "\u2022 "; // fallback
-}
+            const style = getComputedStyle(list).listStyleType;
+            switch (style) {
+              case "disc":   prefix = "\u2022 "; break;
+              case "circle": prefix = "\u25CB "; break;
+              case "square": prefix = "\u25AA "; break;
+              default:       prefix = "\u2022 ";
+            }
           }
 
           p.textContent = prefix + li.textContent.trim();
@@ -803,9 +932,7 @@ switch (style) {
         list.remove();
       });
 
-      alert("✅ All lists converted to <p> with bullets/numbers preserved.");
-
-      // Helper to convert numbers → Roman numerals
+      // Roman numeral helper
       function toRoman(num) {
         const map = [
           [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
@@ -822,74 +949,92 @@ switch (style) {
         return result;
       }
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "All lists converted to paragraphs with numbering preserved",
+      "success"
+    );
   });
 }
-// ========= 1) Auto RTL Direction Fixer =========
-if (rtlAutoFixBtn) {
-  rtlAutoFixBtn.addEventListener("click", () => {
-    exec(() => {
 
+// ========= Auto RTL Direction Fixer =========
+if (rtlAutoFixBtn) {
+  rtlAutoFixBtn.addEventListener("click", async () => {
+
+    const isEnabled = await exec(() => {
+      const enabled = document.body.getAttribute("data-rtl-feature-enabled") === "true";
+
+      if (enabled) {
+        // 🔴 Disable RTL mode
+        document.body.removeAttribute("data-rtl-feature-enabled");
+        return false;
+      }
+
+      // 🟢 Enable RTL mode
       document.body.setAttribute("data-rtl-feature-enabled", "true");
 
-      alert(
-        "✍️ RTL toggle mode enabled\n\n" +
-        "• Select paragraph(s)\n" +
-        "• ALT + ←  = add dir=\"rtl\"\n" +
-        "• ALT + →  = remove dir\n" +
-        "• Works on <p> only — tables ignored"
-      );
+      if (!window.__rtlParagraphToggle__) {
+        window.__rtlParagraphToggle__ = true;
 
-      if (window.__rtlParagraphToggle__) return;
-      window.__rtlParagraphToggle__ = true;
+        document.addEventListener(
+          "keydown",
+          (e) => {
+            if (!document.body.getAttribute("data-rtl-feature-enabled")) return;
+            if (!e.altKey) return;
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
 
-      document.addEventListener(
-        "keydown",
-        e => {
-          if (!document.body.getAttribute("data-rtl-feature-enabled")) return;
-          if (!e.altKey) return;
-          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return;
 
-          const sel = window.getSelection();
-          if (!sel || !sel.rangeCount) return;
+            const range = sel.getRangeAt(0);
+            const paragraphs = Array.from(document.querySelectorAll("p"));
 
-          const range = sel.getRangeAt(0);
+            const targets = paragraphs.filter(p => {
+              if (p.closest("table")) return false;
+              const r = document.createRange();
+              r.selectNodeContents(p);
+              return (
+                range.compareBoundaryPoints(Range.END_TO_START, r) < 0 &&
+                range.compareBoundaryPoints(Range.START_TO_END, r) > 0
+              );
+            });
 
-          const paragraphs = Array.from(document.querySelectorAll("p"));
+            if (!targets.length) return;
 
-          const target = paragraphs.filter(p => {
-            if (p.closest("table")) return false;   // ignore table paragraphs
-            const r = document.createRange();
-            r.selectNodeContents(p);
+            targets.forEach(p => {
+              p.removeAttribute("style");
+              if (e.key === "ArrowLeft") p.setAttribute("dir", "rtl");
+              if (e.key === "ArrowRight") p.removeAttribute("dir");
+            });
 
-            return (
-              range.compareBoundaryPoints(Range.END_TO_START, r) < 0 &&
-              range.compareBoundaryPoints(Range.START_TO_END, r) > 0
-            );
-          });
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          true
+        );
+      }
 
-          if (!target.length) return;
-
-          target.forEach(p => {
-            // remove styles completely — you requested only dir change
-            p.removeAttribute("style");
-
-            if (e.key === "ArrowLeft") {
-              p.setAttribute("dir", "rtl");
-            }
-
-            if (e.key === "ArrowRight") {
-              p.removeAttribute("dir");
-            }
-          });
-
-          e.preventDefault();
-          e.stopPropagation();
-        },
-        true
-      );
+      return true;
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      isEnabled
+        ? 'RTL mode enabled — ALT + ← adds dir="rtl", ALT + → removes it'
+        : "RTL mode disabled",
+      isEnabled ? "success" : "error"
+    );
+
+    toggleButtonActive?.(rtlAutoFixBtn, isEnabled);
+    setFeatureState("RTL Auto Fix", isEnabled);
   });
 }
+
 // ========= 4) Universal Multilingual List / Prefix Fixer =========
 if (rtlListFixBtn) {
   rtlListFixBtn.addEventListener("click", () => {
@@ -1108,20 +1253,20 @@ if (!optConvertTableNumbers && insideTable) return;
 
         // ========= 2) First numeric prefix at start of <p> =========
         if (optConvertPStart) {
-  const prefixRegex = /^(\s*)(\d+)([\.\)\:\-\–])(\s+)([\s\S]*)$/;
+  const prefixRegex = /^(\s*)([\(\)]?)(\d+)([\)\(\.\:\-\–])(\s+)([\s\S]*)$/;
 
   document.querySelectorAll("p").forEach(p => {
     if (!optConvertTableNumbers && p.closest("table")) return;
 
     const txt = p.textContent;
     const m = txt.match(prefixRegex);
-    if (!m) return;
+if (!m) return;
 
-    const [, ws, numStr, punct, spaceAfter, rest] = m;
-    const num = parseInt(numStr, 10);
+const [, ws, open, numStr, close, spaceAfter, rest] = m;
 
-    const formatted = formatNumber(num, cfg);
-    p.textContent = `${ws}${formatted}${punct}${spaceAfter}${rest}`;
+const formatted = formatNumber(parseInt(numStr, 10), cfg);
+
+p.textContent = `${ws}${open}${formatted}${close}${spaceAfter}${rest}`;
   });
 }
 
@@ -1476,16 +1621,21 @@ if (optConvertTableNumbers) {
     });
   });
 }
-// ========= 5) RTL Table Preview & Direction Corrector =========
+// ========= RTL Table Preview & Direction Corrector =========
 if (rtlTableFixBtn) {
-  rtlTableFixBtn.addEventListener("click", () => {
-    exec(() => {
+  rtlTableFixBtn.addEventListener("click", async () => {
 
-      // ==========================================
-      // TABLE TEXT + POSITION CONTROLS
-      // ALT + ARROWS  -> text direction (cells only)
-      // CTRL + ALT -> left/right position (no CSS)
-      // ==========================================
+    const isEnabled = await exec(() => {
+      const enabled = document.body.getAttribute("data-rtl-table-fix") === "true";
+
+      if (enabled) {
+        // 🔴 Disable
+        document.body.removeAttribute("data-rtl-table-fix");
+        return false;
+      }
+
+      // 🟢 Enable
+      document.body.setAttribute("data-rtl-table-fix", "true");
 
       function getClosestTableFromSelection() {
         const sel = window.getSelection();
@@ -1501,7 +1651,6 @@ if (rtlTableFixBtn) {
         return null;
       }
 
-      // ---------- TEXT DIRECTION ----------
       function applyDirectionToTable(table, dir) {
         if (!table) return;
         table.querySelectorAll("th, td, p, div, span").forEach(el => {
@@ -1509,217 +1658,482 @@ if (rtlTableFixBtn) {
         });
       }
 
-      // ---------- POSITION (NO CSS) ----------
       function wrapTable(table, side) {
         if (!table) return;
 
-        // If already wrapped → unwrap
+        // unwrap if already wrapped
         if (table.parentElement?.dataset?.tableWrapper === "1") {
-          const wrapperCell = table.parentElement;
-          const wrapper = wrapperCell.parentElement?.parentElement;
+          const cell = table.parentElement;
+          const wrapper = cell.parentElement?.parentElement;
           wrapper.replaceWith(table);
         }
 
-        // Remember original location
-        const originalParent = table.parentNode;
-        const nextSibling = table.nextSibling;
+        const parent = table.parentNode;
+        const next = table.nextSibling;
 
-        // Wrapper (full width, one cell)
         const wrapper = document.createElement("table");
         wrapper.dataset.tableWrapper = "1";
         wrapper.setAttribute("width", "100%");
 
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-
         td.setAttribute("align", side === "right" ? "right" : "left");
 
         td.appendChild(table);
         tr.appendChild(td);
         wrapper.appendChild(tr);
 
-        // Put wrapper back in the same place
-        if (nextSibling) originalParent.insertBefore(wrapper, nextSibling);
-        else originalParent.appendChild(wrapper);
+        if (next) parent.insertBefore(wrapper, next);
+        else parent.appendChild(wrapper);
       }
 
-      document.addEventListener(
-        "keydown",
-        e => {
-          const table = getClosestTableFromSelection();
-          if (!table) return;
+      if (!window.__rtlTableFixInjected) {
+        window.__rtlTableFixInjected = true;
 
-          // --- ALT + ARROWS (TEXT DIRECTION) ---
-          if (e.altKey && !e.ctrlKey) {
-            if (e.key === "ArrowLeft") {
-              applyDirectionToTable(table, "rtl");
-              e.preventDefault();
-              e.stopPropagation();
+        document.addEventListener(
+          "keydown",
+          e => {
+            if (!document.body.getAttribute("data-rtl-table-fix")) return;
+
+            const table = getClosestTableFromSelection();
+            if (!table) return;
+
+            // ALT + arrows → text direction
+            if (e.altKey && !e.ctrlKey) {
+              if (e.key === "ArrowLeft") {
+                applyDirectionToTable(table, "rtl");
+                e.preventDefault();
+                e.stopPropagation();
+              }
+              if (e.key === "ArrowRight") {
+                applyDirectionToTable(table, "ltr");
+                e.preventDefault();
+                e.stopPropagation();
+              }
             }
 
-            if (e.key === "ArrowRight") {
-              applyDirectionToTable(table, "ltr");
-              e.preventDefault();
-              e.stopPropagation();
+            // CTRL + ALT + arrows → position
+            if (e.altKey && e.ctrlKey) {
+              if (e.key === "ArrowRight") {
+                wrapTable(table, "right");
+                e.preventDefault();
+                e.stopPropagation();
+              }
+              if (e.key === "ArrowLeft") {
+                wrapTable(table, "left");
+                e.preventDefault();
+                e.stopPropagation();
+              }
             }
-          }
+          },
+          true
+        );
+      }
 
-          // --- CTRL + ALT + ARROWS (POSITION) ---
-          if (e.altKey && e.ctrlKey) {
-            if (e.key === "ArrowRight") {
-              wrapTable(table, "right");
-              e.preventDefault();
-              e.stopPropagation();
-            }
-
-            if (e.key === "ArrowLeft") {
-              wrapTable(table, "left");
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }
-        },
-        true
-      );
-
-      alert(
-        "ALT + ←  = RTL (text only)\n" +
-        "ALT + →  = LTR\n" +
-        "CTRL + ALT + → = table RIGHT\n" +
-        "CTRL + ALT + ← = table LEFT\n" +
-        "(No CSS, no column collapse, no wrapping)"
-      );
+      return true;
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      isEnabled
+        ? "RTL Table Fix enabled — ALT/CTRL+ALT arrows control direction & position"
+        : "RTL Table Fix disabled",
+      isEnabled ? "success" : "error"
+    );
+
+    toggleButtonActive?.(rtlTableFixBtn, isEnabled);
+    setFeatureState("RTL Table Fix", isEnabled);
   });
 }
-
-  // ========= 6) RTL Line-Break Intelligent Fixer =========
+// ========= RTL Line-Break Intelligent Fixer =========
 if (rtlLinebreakFixBtn) {
-  rtlLinebreakFixBtn.addEventListener("click", () => {
-    exec(() => {
+  rtlLinebreakFixBtn.addEventListener("click", async () => {
 
-      // avoid duplicate activation
-      if (window.__rtlEditorMode__) {
-        alert("✍️ RTL edit mode is already enabled.");
-        return;
+    const isEnabled = await exec(() => {
+      const enabled = document.body.getAttribute("data-rtl-linebreak-fix") === "true";
+
+      if (enabled) {
+        // 🔴 Disable RTL line-break editor
+        document.body.removeAttribute("data-rtl-linebreak-fix");
+        document.designMode = "off";
+        document.body.contentEditable = "false";
+        return false;
       }
-      window.__rtlEditorMode__ = true;
 
-      // make the whole page editable (so cursor appears)
+      // 🟢 Enable RTL line-break editor
+      document.body.setAttribute("data-rtl-linebreak-fix", "true");
       document.designMode = "on";
       document.body.contentEditable = "true";
 
-      alert(
-        "✍️ RTL Edit Mode Enabled\n\n" +
-        "• Click anywhere — cursor will appear\n" +
-        "• ENTER = split line\n" +
-        "• BACKSPACE (at start) = merge line\n" +
-        "• Space / typing works normally"
-      );
+      if (!window.__rtlLinebreakInjected) {
+        window.__rtlLinebreakInjected = true;
 
-      // ===============================
-      // ENTER — SPLIT PARAGRAPH
-      // ===============================
-      document.addEventListener(
-        "keydown",
-        e => {
-          if (e.key !== "Enter") return;
+        // ===============================
+        // ENTER — SPLIT PARAGRAPH
+        // ===============================
+        document.addEventListener(
+          "keydown",
+          e => {
+            if (!document.body.getAttribute("data-rtl-linebreak-fix")) return;
+            if (e.key !== "Enter") return;
 
-          const sel = window.getSelection();
-          if (!sel || !sel.rangeCount) return;
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return;
 
-          const range = sel.getRangeAt(0);
-          if (!range.collapsed) return;
+            const range = sel.getRangeAt(0);
+            if (!range.collapsed) return;
 
-          // climb to <p>
-          let p = range.startContainer;
-          while (p && p !== document.body && (!p.tagName || p.tagName.toLowerCase() !== "p")) {
-            p = p.parentNode;
-          }
-          if (!p) return;
+            let p = range.startContainer;
+            while (p && p !== document.body && (!p.tagName || p.tagName.toLowerCase() !== "p")) {
+              p = p.parentNode;
+            }
+            if (!p) return;
 
-          const text = p.innerText;
-          const pos = range.startOffset;
+            const text = p.innerText;
+            const pos = range.startOffset;
 
-          const left = text.slice(0, pos).trimEnd();
-          const right = text.slice(pos).trimStart();
+            const left = text.slice(0, pos).trimEnd();
+            const right = text.slice(pos).trimStart();
+            if (!left || !right) return;
 
-          if (!left || !right) return;
+            const p1 = p.cloneNode(false);
+            const p2 = p.cloneNode(false);
+            p1.textContent = left;
+            p2.textContent = right;
 
-          const p1 = p.cloneNode(false);
-          const p2 = p.cloneNode(false);
+            p.parentNode.insertBefore(p1, p);
+            p.parentNode.insertBefore(p2, p);
+            p.remove();
 
-          p1.textContent = left;
-          p2.textContent = right;
+            const nr = document.createRange();
+            nr.setStart(p2.firstChild, 0);
+            nr.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(nr);
 
-          p.parentNode.insertBefore(p1, p);
-          p.parentNode.insertBefore(p2, p);
-          p.remove();
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          true
+        );
 
-          const newRange = document.createRange();
-          newRange.setStart(p2.firstChild, 0);
-          newRange.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(newRange);
+        // ===============================
+        // BACKSPACE — MERGE PARAGRAPHS
+        // ===============================
+        document.addEventListener(
+          "keydown",
+          e => {
+            if (!document.body.getAttribute("data-rtl-linebreak-fix")) return;
+            if (e.key !== "Backspace") return;
 
-          e.preventDefault();
-          e.stopPropagation();
-        },
-        true
-      );
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return;
 
-      // ===============================
-      // BACKSPACE — MERGE LINES
-      // ===============================
-      document.addEventListener(
-        "keydown",
-        e => {
-          if (e.key !== "Backspace") return;
+            const range = sel.getRangeAt(0);
+            if (!range.collapsed) return;
 
-          const sel = window.getSelection();
-          if (!sel || !sel.rangeCount) return;
+            let p = range.startContainer;
+            while (p && p !== document.body && (!p.tagName || p.tagName.toLowerCase() !== "p")) {
+              p = p.parentNode;
+            }
+            if (!p) return;
 
-          const range = sel.getRangeAt(0);
-          if (!range.collapsed) return;
+            if (range.startOffset !== 0) return;
 
-          // climb to <p>
-          let p = range.startContainer;
-          while (p && p !== document.body && (!p.tagName || p.tagName.toLowerCase() !== "p")) {
-            p = p.parentNode;
-          }
-          if (!p) return;
+            const prev = p.previousElementSibling;
+            if (!prev || prev.tagName.toLowerCase() !== "p") return;
 
-          // only if cursor is at start of paragraph
-          if (range.startOffset !== 0) return;
+            prev.textContent =
+              prev.textContent.trimEnd() + " " + p.textContent.trimStart();
 
-          const prev = p.previousElementSibling;
-          if (!prev || prev.tagName.toLowerCase() !== "p") return;
+            const nr = document.createRange();
+            nr.setStart(prev.firstChild, prev.firstChild.textContent.length);
+            nr.collapse(true);
 
-          prev.textContent =
-            prev.textContent.trimEnd() + " " + p.textContent.trimStart();
+            p.remove();
+            sel.removeAllRanges();
+            sel.addRange(nr);
 
-          const newRange = document.createRange();
-          newRange.setStart(prev.firstChild, prev.firstChild.textContent.length);
-          newRange.collapse(true);
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          true
+        );
+      }
 
-          p.remove();
-
-          sel.removeAllRanges();
-          sel.addRange(newRange);
-
-          e.preventDefault();
-          e.stopPropagation();
-        },
-        true
-      );
+      return true;
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      isEnabled
+        ? "RTL line-break editor enabled (Enter = split, Backspace = merge)"
+        : "RTL line-break editor disabled",
+      isEnabled ? "success" : "error"
+    );
+
+    toggleButtonActive?.(rtlLinebreakFixBtn, isEnabled);
+    setFeatureState("RTL Line-Break Fix", isEnabled);
+  });
+}
+// ===========================
+// XML → HTML CONVERTER FEATURE
+// ===========================
+
+const xmlToHtmlBtn = document.getElementById("xml-to-html");
+const xmlFileInput = document.getElementById("xml-file-input");
+
+if (xmlToHtmlBtn && xmlFileInput) {
+
+  // Open file picker when button is clicked
+  xmlToHtmlBtn.addEventListener("click", () => {
+    xmlFileInput.click();
+  });
+
+  // When user selects an XML file
+  xmlFileInput.addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return;
+
+    showPageToast(tab.id, "Reading XML file...", "info");
+
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      const xmlContent = e.target.result;
+
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (xml) => {
+
+          function convertXmlToHtml(xml) {
+  let html = xml;
+
+  // =====================================================
+  // 🔹 PRE-STEP: Decode escaped HTML inside <title>
+  // (&lt;h3&gt; → <h3>)
+  // =====================================================
+  html = html
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+
+  // =====================================================
+  // STEP 1 — HEADINGS (your 3 patterns, fixed)
+  // =====================================================
+
+  // Pattern 1
+  html = html.replace(
+    /<level\s+[^>]*num="(\d+)"[^>]*>\s*<title>\s*([^<]+)\s*<\/title>/g,
+    '<h$1>$2</h$1>'
+  );
+
+  // Pattern 2
+  html = html.replace(
+    /<level\s+[^>]*Ischangematerial="\d+"[^>]*>\s*<title>[\s\S]*?<h(\d+)>([\s\S]*?)<\/h\1>[\s\S]*?<\/title>/g,
+    '<h$1>$2</h$1>'
+  );
+
+  // Pattern 3
+  html = html.replace(
+    /<level\s+[^>]*link="[^"]*"[^>]*>\s*<title>[\s\S]*?<h(\d+)>([\s\S]*?)<\/h\1>[\s\S]*?<\/title>/g,
+    '<h$1>$2</h$1>'
+  );
+
+// =====================================================
+// STEP 2 — FOOTNOTE REF (AVOID NESTED <sup>)
+// =====================================================
+
+// Case A — footnoteref already inside <sup> → only replace inner tag
+html = html.replace(
+  /<sup>\s*<footnoteref\s+fid="([^"]*)">([^<]*)<\/footnoteref>\s*<\/sup>/g,
+  '<sup><a href="#ftnt$1" id="ftnt_ref$1">$2</a></sup>'
+);
+
+// Case B — footnoteref NOT inside <sup> → wrap it
+html = html.replace(
+  /<footnoteref\s+fid="([^"]*)">([^<]*)<\/footnoteref>/g,
+  '<sup><a href="#ftnt$1" id="ftnt_ref$1">$2</a></sup>'
+);
+// ===========================
+// STEP 3 — FOOTNOTE BLOCK (FIXED + BULLETPROOF)
+// ===========================
+html = html.replace(
+  /<footnote\s+id="([^"]*)">[\s\S]*?<p(?:\s+id="([^"]*)")?[^>]*>([\s\S]*?)<\/p>[\s\S]*?<\/footnote>/g,
+  (match, footnoteId, pId, inner) => {
+
+    // Use <p> id if it exists, otherwise fallback to <footnote> id
+    const finalId = pId || footnoteId;
+
+    // Remove all span tags
+    let text = inner
+      .replace(/<\/?span[^>]*>/g, "")
+      .replace(/\s+/g, " ")   // collapse whitespace
+      .trim();
+
+    return `<div class="footnote">\n<p id="ftnt${finalId}">${text}</p>\n</div>`;
+  }
+);
+
+  // =====================================================
+  // STEP 4 — URL TAGS
+  // =====================================================
+  html = html.replace(
+    /<url\s+link="([^"]*)">([^<]*)<\/url>/g,
+    '<a href="$1">$2</a>'
+  );
+
+  // =====================================================
+  // STEP 5 — REMOVE SELF-CLOSING <p/>
+  // =====================================================
+  html = html.replace(/<p\s+id="[^"]*"\s*\/>/g, "");
+
+  // =====================================================
+  // STEP 7 — REMOVE NOISE TAGS
+  // =====================================================
+  html = html.replace(/<\/html>/g, "");
+  html = html.replace(/<html>/g, "");
+  html = html.replace(/<title\s*\/>/g, "");
+
+  // =====================================================
+  // STEP 8 — REMOVE <document> WRAPPER
+  // =====================================================
+  html = html.replace(/<document\s+id="[^"]*">/g, "");
+  html = html.replace(/<\/document>/g, "");
+
+  // =====================================================
+  // STEP 9 — REMOVE <metadata>...</metadata>
+  // =====================================================
+  html = html.replace(/<metadata>[\s\S]*?<\/metadata>/g, "");
+
+  // =====================================================
+  // 🔹 NEW STEP — REMOVE ALL <level ...> OPENING TAGS
+  // =====================================================
+  html = html.replace(/<level[^>]*>/g, "");
+  html = html.replace(/<\/level>/g, "");
+
+  return html;
+}
+
+
+          // Convert XML
+          let converted = convertXmlToHtml(xml);
+
+          // Replace page content
+          document.body.innerHTML = converted;
+
+          // Auto-run your Lossless Cleaner if available
+          if (typeof window.runLosslessCleaner === "function") {
+            window.runLosslessCleaner();
+          }
+        },
+        args: [xmlContent]
+      });
+
+      showPageToast(tab.id, "XML converted to HTML", "success");
+
+      // Reset file input so same file can be selected again
+      xmlFileInput.value = "";
+    };
+
+    reader.onerror = () => {
+      showPageToast(tab.id, "Failed to read XML file", "error");
+    };
+
+    reader.readAsText(file);
   });
 }
 
-  // ==== Complete Fix Unicode Entities Handler ====
+// HTML Cleaner (MINIMAL + WHITESPACE NORMALIZATION)
+const losslessCleanerBtn = document.getElementById("lossless-cleaner");
+
+if (losslessCleanerBtn) {
+  losslessCleanerBtn.addEventListener("click", async () => {
+
+    await exec(() => {
+
+      function isInsideTable(el) {
+        return !!el.closest("table");
+      }
+
+      function isFootnote(el) {
+        return el.tagName.toLowerCase() === "footnote";
+      }
+
+      // ---------- 1) REMOVE EMPTY <p> AND <p><br></p> ----------
+      document.querySelectorAll("p").forEach(p => {
+        if (isInsideTable(p) || isFootnote(p)) return;
+
+        const text = p.textContent.replace(/\s+/g, "").trim();
+        const onlyBr = p.children.length === 1 && p.firstElementChild?.tagName === "BR";
+
+        if (!text || onlyBr) {
+          p.remove();
+        }
+      });
+
+      // ---------- 2) REMOVE EMPTY HEADINGS (h1–h15) ----------
+      const headings = [];
+      for (let i = 1; i <= 15; i++) {
+        headings.push(`h${i}`);
+      }
+
+      document.querySelectorAll(headings.join(",")).forEach(h => {
+        if (isInsideTable(h) || isFootnote(h)) return;
+
+        const text = h.textContent.replace(/\s+/g, "").trim();
+        if (!text) {
+          h.remove();
+        }
+      });
+
+      // ---------- 3) REMOVE EMPTY <div> ----------
+      document.querySelectorAll("div").forEach(div => {
+        if (isInsideTable(div) || isFootnote(div)) return;
+
+        const text = div.textContent.replace(/\s+/g, "").trim();
+
+        if (!text && div.children.length === 0) {
+          div.remove();
+        }
+      });
+
+      // ---------- 4) NORMALIZE WHITESPACE (CLEAN TEXT ONLY) ----------
+      document.querySelectorAll("body *").forEach(el => {
+        if (isInsideTable(el)) return;
+
+        el.childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            node.textContent = node.textContent
+              .replace(/\s+/g, " ")   // collapse multiple spaces/newlines
+              .trim();                // remove leading/trailing space
+          }
+        });
+      });
+
+    });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "Cleanup completed (empty tags removed + whitespace normalized)",
+      "success"
+    );
+  });
+}
+
+// ==== Complete Fix Unicode Entities Handler ====
 if (fixEntitiesBtn) {
-  fixEntitiesBtn.addEventListener("click", () => {
-    exec(() => {
+  fixEntitiesBtn.addEventListener("click", async () => {
+
+    await exec(() => {
       function decodeEntities(str) {
         const txt = document.createElement("textarea");
         txt.innerHTML = str;
@@ -1739,15 +2153,22 @@ if (fixEntitiesBtn) {
       }
 
       walk(document.body);
-
-      alert("✅ All HTML entities and broken Unicode fixed.");
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "All HTML entities and broken Unicode fixed",
+      "success"
+    );
   });
 }
 // Heading Mode
 if (assignHeadingBtn) {
-  assignHeadingBtn.addEventListener("click", () => {
-    exec(() => {
+  assignHeadingBtn.addEventListener("click", async () => {
+
+    const isEnabled = await exec(() => {
       const isActive = document.body.getAttribute("data-heading-mode") === "true";
 
       if (isActive) {
@@ -1759,6 +2180,7 @@ if (assignHeadingBtn) {
           el.style.outline = "";
         });
         localStorage.setItem("headingMode", "false");
+        return false;
       } else {
         // Enable Heading Mode
         document.body.setAttribute("data-heading-mode", "true");
@@ -1769,7 +2191,6 @@ if (assignHeadingBtn) {
           el.style.caretColor = "auto";
         });
         localStorage.setItem("headingMode", "true");
-        alert("📑 Heading Mode enabled (Ctrl+Alt+1–9 = H1–H9, Ctrl+Alt+0 = P)");
 
         // Inject key handler once
         if (!window.__headingModeInjected) {
@@ -1779,7 +2200,7 @@ if (assignHeadingBtn) {
 
             let targetTag = null;
             if (e.key === "0") {
-              targetTag = "p"; // Ctrl+Alt+0 → convert to paragraph
+              targetTag = "p";
             } else {
               const num = parseInt(e.key, 10);
               if (!isNaN(num) && num >= 1 && num <= 9) {
@@ -1804,10 +2225,10 @@ if (assignHeadingBtn) {
                   newEl.style.caretColor = "auto";
                   el.replaceWith(newEl);
 
-                  // ✅ Restore caret inside new element
+                  // Restore caret
                   const range = document.createRange();
                   range.selectNodeContents(newEl);
-                  range.collapse(true); // caret at start
+                  range.collapse(true);
                   sel.removeAllRanges();
                   sel.addRange(range);
                 }
@@ -1816,18 +2237,30 @@ if (assignHeadingBtn) {
           });
           window.__headingModeInjected = true;
         }
+
+        return true;
       }
     });
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      isEnabled
+        ? "Heading Mode enabled (Ctrl+Alt+1–9 = H1–H9, Ctrl+Alt+0 = P)"
+        : "Heading Mode disabled",
+      isEnabled ? "success" : "error"
+    );
   });
 }
-
-//Line break fixer
+// Line break fixer / Content Editor
 if (contentEditorBtn) {
-  contentEditorBtn.addEventListener("click", () => {
-    exec(() => {
+  contentEditorBtn.addEventListener("click", async () => {
+
+    const isEnabled = await exec(() => {
       localStorage.setItem("contentEditorMode", "true");
 
-      // Enable editing for <p> and all headings
+      // Enable editing for <p> and headings
       document.querySelectorAll("p,h1,h2,h3,h4,h5,h6,h7,h8,h9").forEach(block => {
         block.setAttribute("contenteditable", "true");
         block.style.cursor = "text";
@@ -1843,7 +2276,7 @@ if (contentEditorBtn) {
           if (!sel || !sel.rangeCount) return;
           const range = sel.getRangeAt(0);
 
-          // Find editable block (P or H1-H9)
+          // Find editable block
           let block = range.startContainer;
           while (block && !(block.nodeName && /^(P|H[1-9])$/.test(block.nodeName))) {
             block = block.parentNode;
@@ -1853,30 +2286,24 @@ if (contentEditorBtn) {
           // ---------- Split on Enter ----------
           if (e.key === "Enter" && sel.isCollapsed) {
             e.preventDefault();
-
             try {
-              // Split content before/after caret
               const beforeRange = document.createRange();
               beforeRange.setStart(block, 0);
               beforeRange.setEnd(range.startContainer, range.startOffset);
-              const beforeFrag = beforeRange.cloneContents();
 
               const afterRange = document.createRange();
               afterRange.setStart(range.startContainer, range.startOffset);
               afterRange.setEnd(block, block.childNodes.length);
+
+              const tag = block.tagName.toLowerCase();
+              const b1 = document.createElement(tag);
+              const b2 = document.createElement(tag);
+
+              b1.appendChild(beforeRange.cloneContents());
               const afterFrag = afterRange.cloneContents();
-
-              // Build two blocks of the same tag
-              const tagName = block.tagName.toLowerCase();
-              const b1 = document.createElement(tagName);
-              const b2 = document.createElement(tagName);
-
-              b1.appendChild(beforeFrag);
-              if (afterFrag.childNodes.length === 0) {
-                b2.appendChild(document.createTextNode("\u00A0"));
-              } else {
-                b2.appendChild(afterFrag);
-              }
+              b2.appendChild(
+                afterFrag.childNodes.length ? afterFrag : document.createTextNode("\u00A0")
+              );
 
               [b1, b2].forEach(b => {
                 b.setAttribute("contenteditable", "true");
@@ -1888,113 +2315,215 @@ if (contentEditorBtn) {
               const parent = block.parentNode;
               parent.insertBefore(b1, block);
               parent.insertBefore(b2, block);
-              parent.removeChild(block);
+              block.remove();
 
-              // Place caret inside new block (start of b2)
-              const walker = document.createTreeWalker(b2, NodeFilter.SHOW_TEXT, null, false);
-              let firstText = walker.nextNode();
-              const newRange = document.createRange();
-              if (firstText) {
-                newRange.setStart(firstText, 0);
-              } else {
-                const tn = document.createTextNode("");
-                b2.appendChild(tn);
-                newRange.setStart(tn, 0);
-              }
-              newRange.collapse(true);
+              const walker = document.createTreeWalker(b2, NodeFilter.SHOW_TEXT);
+              const t = walker.nextNode() || b2.appendChild(document.createTextNode(""));
+              const nr = document.createRange();
+              nr.setStart(t, 0);
+              nr.collapse(true);
               sel.removeAllRanges();
-              sel.addRange(newRange);
-
-            } catch (err) {
-              console.error("Error splitting block:", err);
-            }
+              sel.addRange(nr);
+            } catch {}
           }
 
           // ---------- Merge on Backspace ----------
           if (e.key === "Backspace" && sel.isCollapsed) {
-            const caretTest = document.createRange();
+            const test = document.createRange();
             try {
-              caretTest.setStart(block, 0);
-              caretTest.setEnd(range.startContainer, range.startOffset);
-            } catch (err) {
+              test.setStart(block, 0);
+              test.setEnd(range.startContainer, range.startOffset);
+            } catch {
               return;
             }
-            if (caretTest.toString().trim().length !== 0) return;
+            if (test.toString().trim()) return;
 
             const prev = block.previousElementSibling;
             if (!prev || !/^(P|H[1-9])$/.test(prev.tagName)) return;
 
             e.preventDefault();
 
-            // Merge contents
             while (block.firstChild) {
-              const node = block.firstChild;
-              if (node.nodeType === Node.TEXT_NODE &&
-                 (node.textContent.trim() === "" || node.textContent === "\u00A0")) {
-                block.removeChild(node);
-                continue;
+              const n = block.firstChild;
+              if (n.nodeType === Node.TEXT_NODE &&
+                 (n.textContent.trim() === "" || n.textContent === "\u00A0")) {
+                block.removeChild(n);
+              } else {
+                prev.appendChild(n);
               }
-              prev.appendChild(node);
             }
 
-            // Caret goes to end of prev
-            function getLastTextNode(node) {
-              if (!node) return null;
-              if (node.nodeType === Node.TEXT_NODE) return node;
-              for (let i = node.childNodes.length - 1; i >= 0; i--) {
-                const t = getLastTextNode(node.childNodes[i]);
-                if (t) return t;
-              }
-              return null;
-            }
-            const lastText = getLastTextNode(prev);
-            const newRange = document.createRange();
-            if (lastText) {
-              newRange.setStart(lastText, lastText.length);
-            } else {
-              const tn = document.createTextNode("");
-              prev.appendChild(tn);
-              newRange.setStart(tn, 0);
-            }
-            newRange.collapse(true);
+            const lastText = (() => {
+              const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
+              let t, last;
+              while ((t = w.nextNode())) last = t;
+              return last || prev.appendChild(document.createTextNode(""));
+            })();
+
+            const nr = document.createRange();
+            nr.setStart(lastText, lastText.length);
+            nr.collapse(true);
             sel.removeAllRanges();
-            sel.addRange(newRange);
+            sel.addRange(nr);
 
             block.remove();
           }
-
         }, false);
 
         window.__contentEditorEnterInjected = true;
       }
 
-      alert("✏️ Content Editor Mode ON\nEnter = split block\nBackspace at start = merge with previous.");
+      return true;
     });
 
-    saveContentEditorBtn.style.display = "inline-block";
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "Content Editor enabled (Enter = split, Backspace at start = merge)",
+      "success"
+    );
+
+    if (saveContentEditorBtn) {
+      saveContentEditorBtn.style.display = "inline-block";
+    }
   });
 }
-
 // =======================
 // Inline Editing Feature
 // =======================
-  if (inlineEditBtn) {
-    inlineEditBtn.addEventListener("click", () => {
-      exec(() => {
-        window.__inlineEditing = true;
-        document.querySelectorAll("p, div, h1, h2, h3, h4, h5, h6, li, span").forEach(el => {
+if (inlineEditBtn) {
+  inlineEditBtn.addEventListener("click", async () => {
+
+    await exec(() => {
+      window.__inlineEditing = true;
+      localStorage.setItem("inlineEditing", "true");
+
+      // Enable editable elements
+      document
+        .querySelectorAll("p, div, h1, h2, h3, h4, h5, h6, li, span")
+        .forEach(el => {
           el.setAttribute("contenteditable", "true");
           el.style.outline = "1px dashed #00acc1";
           el.style.cursor = "text";
         });
-      });
-      alert(" Click on any text to edit it.");
-      saveInlineEditBtn.style.display = "inline-block";
-      showSaveBtn();
-      toggleButtonActive(inlineEditBtn, true);
-  setFeatureState("inlineEdit", true);   // ✅ save active
+
+      // Inject keyboard handler ONLY ONCE
+      if (!window.__inlineEditKeyHandlerInjected) {
+        document.addEventListener("keydown", function (e) {
+          if (localStorage.getItem("inlineEditing") !== "true") return;
+
+          const sel = window.getSelection();
+          if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
+
+          const range = sel.getRangeAt(0);
+          let block = range.startContainer;
+
+          // Find editable block
+          while (
+            block &&
+            !(block.nodeName && /^(P|DIV|LI|H[1-6])$/.test(block.nodeName))
+          ) {
+            block = block.parentNode;
+          }
+          if (!block) return;
+
+          // ---------- ENTER → SPLIT ----------
+          if (e.key === "Enter") {
+            e.preventDefault();
+
+            const before = document.createRange();
+            before.setStart(block, 0);
+            before.setEnd(range.startContainer, range.startOffset);
+
+            const after = document.createRange();
+            after.setStart(range.startContainer, range.startOffset);
+            after.setEnd(block, block.childNodes.length);
+
+            const tag = block.tagName.toLowerCase();
+            const b1 = document.createElement(tag);
+            const b2 = document.createElement(tag);
+
+            b1.appendChild(before.cloneContents());
+            const afterFrag = after.cloneContents();
+            if (afterFrag.childNodes.length) {
+  b2.appendChild(afterFrag);
+} else {
+  b2.appendChild(document.createTextNode(""));
+}
+
+            [b1, b2].forEach(b => {
+              b.setAttribute("contenteditable", "true");
+              b.style.cursor = "text";
+              b.style.outline = "1px dashed #00acc1";
+            });
+
+            block.parentNode.insertBefore(b1, block);
+            block.parentNode.insertBefore(b2, block);
+            block.remove();
+
+            const walker = document.createTreeWalker(b2, NodeFilter.SHOW_TEXT);
+            const t = walker.nextNode() || b2.appendChild(document.createTextNode(""));
+            const nr = document.createRange();
+            nr.setStart(t, 0);
+            nr.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(nr);
+          }
+
+          // ---------- BACKSPACE → MERGE ----------
+          if (e.key === "Backspace") {
+            const test = document.createRange();
+            test.setStart(block, 0);
+            test.setEnd(range.startContainer, range.startOffset);
+            if (test.toString().trim()) return;
+
+            const prev = block.previousElementSibling;
+            if (!prev || !/^(P|DIV|LI|H[1-6])$/.test(prev.tagName)) return;
+
+            e.preventDefault();
+
+            while (block.firstChild) {
+              prev.appendChild(block.firstChild);
+            }
+
+            const walker = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
+            let last;
+            while (walker.nextNode()) last = walker.currentNode;
+            last = last || prev.appendChild(document.createTextNode(""));
+
+            const nr = document.createRange();
+            nr.setStart(last, last.length);
+            nr.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(nr);
+
+            block.remove();
+          }
+        });
+
+        window.__inlineEditKeyHandlerInjected = true;
+      }
+
+      return true;
     });
-  }
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    showPageToast(
+      tab.id,
+      "Inline editing enabled (Enter = split, Backspace = merge)",
+      "success"
+    );
+
+    if (saveInlineEditBtn) {
+      saveInlineEditBtn.style.display = "inline-block";
+    }
+
+    toggleButtonActive(inlineEditBtn, true);
+    setFeatureState("inlineEdit", true);
+  });
+}
 // ==================================
 // Auto-clean on Copy (Clipboard Fix)
 // ==================================
@@ -2227,28 +2756,44 @@ document.getElementById('stylings-btn').addEventListener('click', () => {
   });
 });
 // --- Google Link Cleaner ---
-document.getElementById("clean-google-links").addEventListener("click", () => {
-  exec(() => {
-    const anchors = document.querySelectorAll("a[href*='google.com/url?']");
-    let cleanedCount = 0;
+const cleanGoogleLinksBtn = document.getElementById("clean-google-links");
 
-    anchors.forEach(a => {
-      // Match actual link inside q= parameter
-      const match = a.href.match(/^https:\/\/www\.google\.com\/url\?q=([^&]+)/);
-      if (match && match[1]) {
-        const realLink = decodeURIComponent(match[1]);
-        a.href = realLink;
-        cleanedCount++;
-      }
+if (cleanGoogleLinksBtn) {
+  cleanGoogleLinksBtn.addEventListener("click", async () => {
+
+    const cleanedCount = await exec(() => {
+      const anchors = document.querySelectorAll("a[href*='google.com/url?']");
+      let count = 0;
+
+      anchors.forEach(a => {
+        const match = a.href.match(/^https:\/\/www\.google\.com\/url\?q=([^&]+)/);
+        if (match && match[1]) {
+          a.href = decodeURIComponent(match[1]);
+          count++;
+        }
+      });
+
+      return count; // 👈 return value from page context
     });
 
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
     if (cleanedCount > 0) {
-      alert(`✅ Cleaned ${cleanedCount} Google redirect links.`);
+      showPageToast(
+        tab.id,
+        `Cleaned ${cleanedCount} Google redirect links`,
+        "success"
+      );
     } else {
-      alert("ℹ️ No Google redirect links found.");
+      showPageToast(
+        tab.id,
+        "No Google redirect links found",
+        "info"
+      );
     }
   });
-});
+}
+
 //OCR
 document.getElementById("openOcrTool").addEventListener("click", () => {
   chrome.windows.create({
@@ -2275,7 +2820,6 @@ document.getElementById('openEditorBtn').addEventListener('click', () => {
     height: 700
   });
 });
-
 // =============== Hyperlink Injector Toggle ===============
 (function () {
   const btn = document.getElementById("hyperlink-injector");
@@ -2390,75 +2934,83 @@ document.getElementById('openEditorBtn').addEventListener('click', () => {
     delete window.__editLinkHandler;
   }
 })();
-
 // Image Inserter
 const imageInserterBtn = document.getElementById("activate-image-inserter");
 
-imageInserterBtn.addEventListener("click", async () => {
-  const { imageInserter } = await chrome.storage.local.get("imageInserter");
-  const newState = !imageInserter; // toggle on/off
+if (imageInserterBtn) {
+  imageInserterBtn.addEventListener("click", async () => {
 
-  await chrome.storage.local.set({ imageInserter: newState });
+    const { imageInserter } = await chrome.storage.local.get("imageInserter");
+    const newState = !imageInserter; // toggle on/off
+    await chrome.storage.local.set({ imageInserter: newState });
 
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: (enabled) => {
-      if (enabled) {
-        if (window.__imageInserterListenerInjected) return;
-        window.__imageInserterListenerInjected = true;
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (enabled) => {
+        if (enabled) {
+          if (window.__imageInserterListenerInjected) return;
+          window.__imageInserterListenerInjected = true;
 
-        document.addEventListener("click", (e) => {
-          chrome.storage.local.get("imageInserter", (res) => {
-            if (!res.imageInserter) return;
+          document.addEventListener("click", (e) => {
+            chrome.storage.local.get("imageInserter", (res) => {
+              if (!res.imageInserter) return;
 
-            const target = e.target;
-            if (
-              target.tagName === "P" &&
-              target.textContent.replace(/\u00A0/g, "").trim() === ""
-            ) {
-              const fileInput = document.createElement("input");
-              fileInput.type = "file";
-              fileInput.accept = "image/*";
+              const target = e.target;
+              if (
+                target.tagName === "P" &&
+                target.textContent.replace(/\u00A0/g, "").trim() === ""
+              ) {
+                const fileInput = document.createElement("input");
+                fileInput.type = "file";
+                fileInput.accept = "image/*";
 
-              fileInput.addEventListener("change", () => {
-                const file = fileInput.files[0];
-                if (!file) return;
+                fileInput.addEventListener("change", () => {
+                  const file = fileInput.files[0];
+                  if (!file) return;
 
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                  const img = document.createElement("img");
-                  img.src = evt.target.result;
-                  img.style.maxWidth = "100%";
+                  const reader = new FileReader();
+                  reader.onload = (evt) => {
+                    const img = document.createElement("img");
+                    img.src = evt.target.result;
+                    img.style.maxWidth = "100%";
+                    img.style.display = "block";
 
-                  target.innerHTML = "";
-                  target.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-              });
+                    target.innerHTML = "";
+                    target.appendChild(img);
+                  };
+                  reader.readAsDataURL(file);
+                });
 
-              fileInput.click();
-            }
+                fileInput.click();
+              }
+            });
           });
-        });
+        }
+      },
+      args: [newState]
+    });
 
-        alert("✅ Image Inserter enabled.\nClick on an empty <p> to insert an image.");
-      } else {
-        alert("❌ Image Inserter disabled.");
-      }
-    },
-    args: [newState]
+    // 🔹 UI feedback (popup → webpage)
+    showPageToast(
+      tab.id,
+      newState
+        ? "Image Inserter enabled. Click an empty paragraph to insert an image."
+        : "Image Inserter disabled.",
+      newState ? "success" : "error"
+    );
+
+    // Optional: mark button active
+    toggleButtonActive?.(imageInserterBtn, newState);
+    setFeatureState("Image Inserter", newState);
   });
-});
-
-  // NOTE: Old convert-to-base64 code removed here and replaced with a proper popup -> background -> page flow.
+}
 // ---- Convert All Images to Base64 (Folder + Fetch + Canvas fallbacks) ----
 (function setupConvertAllImagesButton() {
   const contentEditorOption = document.getElementById("content-editor-option");
   if (!contentEditorOption) return;
 
-  // Create button once
   const BTN_ID = "convert-all-images-b64-btn";
   let convertAllImagesBtn = document.getElementById(BTN_ID);
   if (!convertAllImagesBtn) {
@@ -2469,7 +3021,6 @@ imageInserterBtn.addEventListener("click", async () => {
     contentEditorOption.appendChild(convertAllImagesBtn);
   }
 
-  // Helpers
   const fileToDataURL = (file) =>
     new Promise((res, rej) => {
       const reader = new FileReader();
@@ -2486,53 +3037,48 @@ imageInserterBtn.addEventListener("click", async () => {
       reader.readAsDataURL(blob);
     });
 
-  // Main click handler
   convertAllImagesBtn.addEventListener("click", async () => {
+    let tab;
+
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) throw new Error("No active tab.");
 
-      // 1) Let user pick a folder (optional; we’ll still work if they cancel)
+      // 🔹 Folder picker (optional)
       let dirHandle = null;
       try {
         dirHandle = await window.showDirectoryPicker({ mode: "read" });
       } catch (e) {
-        if (e.name === "AbortError") {
-          console.log("Folder picker canceled. Proceeding with fetch/canvas fallback.");
-        } else {
-          console.warn("Folder picker error:", e);
-        }
+        if (e.name !== "AbortError") console.warn("Folder picker error:", e);
       }
 
-      // 2) Collect all <img> srcs from the page
+      // 🔹 Collect image srcs
       const srcListRet = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: () => Array.from(document.images).map((img) => img.src),
+        func: () => Array.from(document.images).map(img => img.src),
       });
       const srcList = srcListRet?.[0]?.result || [];
+
       if (!srcList.length) {
-        alert("No <img> elements found on this page.");
+        showPageToast(tab.id, "No images found on this page", "info");
         return;
       }
 
-      // 3) Build updates with robust fallbacks
       const updates = [];
 
       for (const src of srcList) {
-        if (!src || src.startsWith("data:")) continue; // skip already-base64
+        if (!src || src.startsWith("data:")) continue;
 
         const filename = src.split("/").pop().split("?")[0];
         let dataURL = null;
 
-        // 3a) Try local file match (if a folder was chosen)
+        // 1️⃣ Local folder match
         if (dirHandle) {
           try {
             let fh = null;
-            // Exact match first
             try {
               fh = await dirHandle.getFileHandle(filename);
             } catch {
-              // Case-insensitive scan
               for await (const [name, handle] of dirHandle.entries()) {
                 if (name.toLowerCase() === filename.toLowerCase()) {
                   fh = handle;
@@ -2541,62 +3087,46 @@ imageInserterBtn.addEventListener("click", async () => {
               }
             }
             if (fh) {
-              const file = await fh.getFile();
-              dataURL = await fileToDataURL(file);
-              console.log("Matched local file:", filename);
+              dataURL = await fileToDataURL(await fh.getFile());
             }
-          } catch (e) {
-            console.debug("Local lookup failed for", filename, e);
-          }
+          } catch {}
         }
 
-        // 3b) Fallback: fetch from extension context (needs host_permissions)
+        // 2️⃣ Fetch fallback
         if (!dataURL) {
           try {
             const resp = await fetch(src, { credentials: "omit" });
             if (resp.ok) {
-              const blob = await resp.blob();
-              dataURL = await blobToDataURL(blob);
-              console.log("Fetched & converted:", src);
-            } else {
-              console.warn("Fetch not OK", resp.status, src);
+              dataURL = await blobToDataURL(await resp.blob());
             }
-          } catch (e) {
-            console.warn("Fetch failed for", src, e);
-          }
+          } catch {}
         }
 
-        // 3c) Final fallback: do it in-page via canvas (works when same-origin/CORS allows)
+        // 3️⃣ Canvas fallback
         if (!dataURL) {
-          try {
-            const ret = await chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              func: (imageSrc) =>
-                new Promise((resolve) => {
-                  const im = new Image();
-                  im.crossOrigin = "anonymous";
-                  im.onload = () => {
-                    try {
-                      const c = document.createElement("canvas");
-                      c.width = im.naturalWidth || im.width;
-                      c.height = im.naturalHeight || im.height;
-                      const ctx = c.getContext("2d");
-                      ctx.drawImage(im, 0, 0);
-                      resolve(c.toDataURL("image/png"));
-                    } catch (err) {
-                      console.error("Canvas toDataURL failed", err);
-                      resolve(null);
-                    }
-                  };
-                  im.onerror = () => resolve(null);
-                  im.src = imageSrc;
-                }),
-              args: [src],
-            });
-            dataURL = ret?.[0]?.result || null;
-          } catch (e) {
-            console.warn("Canvas fallback failed:", e);
-          }
+          const ret = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (imageSrc) =>
+              new Promise(resolve => {
+                const im = new Image();
+                im.crossOrigin = "anonymous";
+                im.onload = () => {
+                  try {
+                    const c = document.createElement("canvas");
+                    c.width = im.naturalWidth || im.width;
+                    c.height = im.naturalHeight || im.height;
+                    c.getContext("2d").drawImage(im, 0, 0);
+                    resolve(c.toDataURL("image/png"));
+                  } catch {
+                    resolve(null);
+                  }
+                };
+                im.onerror = () => resolve(null);
+                im.src = imageSrc;
+              }),
+            args: [src],
+          });
+          dataURL = ret?.[0]?.result || null;
         }
 
         if (dataURL) {
@@ -2604,31 +3134,45 @@ imageInserterBtn.addEventListener("click", async () => {
         }
       }
 
-      // 4) Replace in the page
+      // 🔹 Replace images
       if (updates.length) {
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: (updates) => {
-            const map = new Map(updates.map((u) => [u.oldSrc, u.newSrc]));
-            document.querySelectorAll("img").forEach((img) => {
+            const map = new Map(updates.map(u => [u.oldSrc, u.newSrc]));
+            document.querySelectorAll("img").forEach(img => {
               const nu = map.get(img.src);
               if (nu) img.src = nu;
             });
           },
           args: [updates],
         });
-        alert(`✅ Converted ${updates.length} images to Base64.`);
+
+        showPageToast(
+          tab.id,
+          `Converted ${updates.length} images to Base64`,
+          "success"
+        );
       } else {
-        alert("⚠️ Couldn't convert any images. Check the console for details (CORS/local match).");
+        showPageToast(
+          tab.id,
+          "No images could be converted (CORS / local match issue)",
+          "error"
+        );
       }
+
     } catch (err) {
       console.error("Convert All Images error:", err);
-      alert("⚠️ Error: " + (err && err.message ? err.message : String(err)));
+      if (tab?.id) {
+        showPageToast(
+          tab.id,
+          "Error while converting images (see console)",
+          "error"
+        );
+      }
     }
   });
 })();
-
-
   // Utility to inject content script (footnote or combined)
   function injectContentScript() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -2742,6 +3286,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFeatureToggle("activate-content-editor", "contentEditorFeature");
   setupFeatureToggle("activate-hyperlink-injector", "HyperlinkInjectorFeature");
   setupFeatureToggle("clean-google-links", "HyperlinkCleanerFeature");
+  setupFeatureToggle("lossless-cleaner", "Lossless HTML Cleaner");
+  setupFeatureToggle("xml-to-html", "XML → HTML Converter");
   setupFeatureToggle("activate-image-inserter", "imageInserterFeature");
   setupFeatureToggle("open-gemini", "geminiTableFeature");
   setupFeatureToggle("openEditorBtn", "tableEditorFeature");
@@ -2799,48 +3345,65 @@ function organizeAllTags() {
     alert("✅ Flattened HTML copied to clipboard (div spacing fixed).");
   });
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   const copyCard = document.getElementById("copyHtmlIcon");
+
   if (copyCard) {
     copyCard.addEventListener("click", async () => {
-      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
 
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          // Clone body to avoid touching live DOM
-          const container = document.createElement("div");
-          container.innerHTML = document.body.outerHTML;
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: tab.id },
+          func: () => {
+            // Clone body to avoid touching live DOM
+            const container = document.createElement("div");
+            container.innerHTML = document.body.outerHTML;
 
-          // Remove active panel if exists
-          const panel = container.querySelector("#__active_panel__");
-          if (panel) panel.remove();
+            // Remove active panel if exists
+            const panel = container.querySelector("#__active_panel__");
+            if (panel) panel.remove();
 
-          // Clean styles & contenteditable only
-          container.querySelectorAll("*").forEach(el => {
-            if (el.hasAttribute("style")) el.removeAttribute("style");
-            if (el.hasAttribute("contenteditable")) el.removeAttribute("contenteditable");
-          });
+            // Clean styles & contenteditable only
+            container.querySelectorAll("*").forEach(el => {
+              if (el.hasAttribute("style")) el.removeAttribute("style");
+              if (el.hasAttribute("contenteditable")) el.removeAttribute("contenteditable");
+            });
 
-          return container.innerHTML.trim();
+            return container.innerHTML.trim();
+          }
+        },
+        async (results) => {
+          if (results && results[0] && results[0].result) {
+            const cleanedHtml = results[0].result;
+
+            try {
+              await navigator.clipboard.writeText(cleanedHtml);
+
+              // ✅ SUCCESS TOAST (no alert)
+              showPageToast(
+                tab.id,
+                "Clean HTML copied",
+                "success"
+              );
+
+            } catch (err) {
+              console.error("Copy failed:", err);
+
+              // ❌ ERROR TOAST (no alert)
+              showPageToast(
+                tab.id,
+                "Failed to copy HTML",
+                "error"
+              );
+            }
+          }
         }
-      }, (results) => {
-        if (results && results[0] && results[0].result) {
-          const cleanedHtml = results[0].result;
-          navigator.clipboard.writeText(cleanedHtml).then(() => {
-            alert("✅ Clean HTML copied");
-          }).catch(err => {
-            console.error("Copy failed: ", err);
-            alert("❌ Failed to copy HTML");
-          });
-        }
-      });
+      );
     });
   }
 });
-
-
 new MutationObserver(() => {
   document.querySelectorAll("[style='']").forEach(el => el.removeAttribute("style"));
 }).observe(document.body, { attributes: true, subtree: true, attributeFilter: ["style"] });
@@ -4670,4 +5233,50 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.toggle('active'); // toggle green
     });
   });
+});
+/* ===============================
+   BATCH CLEANUP EXECUTION
+================================ */
+
+const batchActionMap = {
+  removeStyles: () => document.getElementById("remove-style-btn")?.click(),
+  removeClasses: () => document.getElementById("remove-attributes")?.click(),
+  removeNbsp: () => document.getElementById("remove-nbsp-btn")?.click(),
+  removeSpan: () => document.getElementById("remove-span-btn")?.click(),
+  replaceLi: () => document.getElementById("remove-ul-li")?.click(),
+  fixUnicode: () => document.getElementById("remove-unicode")?.click(),
+  cleanLinks: () => document.getElementById("clean-google-links")?.click()
+};
+
+const executeBtn = document.getElementById("batchExecuteBtn");
+
+function updateBatchExecuteVisibility() {
+  const anyChecked = document.querySelectorAll(".action-toggle:checked").length > 0;
+  executeBtn.classList.toggle("hidden", !anyChecked);
+}
+
+document.querySelectorAll(".action-toggle").forEach(toggle => {
+  toggle.addEventListener("change", updateBatchExecuteVisibility);
+});
+executeBtn.addEventListener("click", async () => {
+  const checked = document.querySelectorAll(".action-toggle:checked");
+  if (!checked.length) return;
+
+  window.__batchRunning = true;
+
+  checked.forEach(toggle => {
+    batchActionMap[toggle.dataset.action]?.();
+  });
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  setTimeout(() => {
+    showPageToast(
+      tab.id,
+      `Batch cleanup completed (${checked.length} actions)`,
+      "success"
+    );
+
+    window.__batchRunning = false;
+  }, 600);
 });

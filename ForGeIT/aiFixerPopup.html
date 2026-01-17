@@ -3,14 +3,18 @@
 <html>
 <head>
   <title>RTL Fixer</title>
+
   <style>
     body { 
       font-family: Arial; 
       padding: 20px; 
-      width: 260px; 
+      width: 280px; 
       background:#111; 
       color:white;
     }
+
+    h3 { margin-bottom: 8px; }
+
     input, button { 
       width: 100%; 
       padding: 10px; 
@@ -18,13 +22,18 @@
       border-radius:6px;
       border:none;
       box-sizing: border-box;
+      font-size: 14px;
     }
+
     button { 
       background:#2563eb; 
       color:white; 
       cursor:pointer; 
     }
-    button:hover { background:#1d4ed8; }
+
+    button:hover { 
+      background:#1d4ed8; 
+    }
 
     #saveMsg{
       font-size: 12px;
@@ -33,17 +42,85 @@
       opacity: 0;
       transition: opacity .3s ease;
     }
+
+    /* API usage box */
+    #apiUsageBox{
+      margin-top: 18px;
+      padding: 10px;
+      border-radius:8px;
+      background:#181818;
+      border:1px solid #2a2a2a;
+    }
+
+    #apiUsageBarContainer{
+      background:#333;
+      height:10px; 
+      border-radius:6px; 
+      margin-top:6px;
+    }
+
+    #apiUsageBar{
+      height:10px;
+      width:0%; 
+      background:#4caf50; 
+      border-radius:6px;
+      transition: width .25s ease;
+    }
+
+    .info-line {
+      font-size: 12px;
+      color:#bbb;
+      margin-top:4px;
+    }
+    .keySelect {
+  transform: scale(1.1);
+}
   </style>
 </head>
+
 <body>
 
-  <h3>Gemini API Key</h3>
+  <h3>Gemini API Keys</h3>
+<!-- API USAGE PANEL -->
+  <div id="apiUsageBox">
+    <div><strong>Gemini API Keys Usage</strong></div>
 
-  <input id="apiKey" type="password" placeholder="Enter API key">
-  <div id="saveMsg"></div>
+    <div class="info-line">
+      Limit: <span id="apiLimitChunks">10</span> chunks 
+      ( <span id="apiLimitLines">400</span> lines )
+    </div>
 
-  <button id="saveKey">Save</button>
-  <button id="fixRTL">Fix RTL Brackets</button>
+    <div class="info-line">
+  Used: <span id="apiUsedChunks">0</span> chunks  
+  (<span id="apiUsedLines">0</span> lines)
+</div>
+
+<div class="info-line">
+  Remaining: <span id="apiRemainingChunks">10</span> chunks  
+  (<span id="apiRemainingLines">400</span> lines)
+</div>
+
+    <div id="apiUsageBarContainer">
+      <div id="apiUsageBar"></div>
+    </div>
+  </div>
+<div id="keysContainer"></div>
+
+<button id="addKeyBtn">Add New Key</button>
+
+<div id="addKeyPanel" style="display:none;margin-top:10px;">
+  <input id="newKeyInput"
+         placeholder="Paste your Gemini API key"
+         style="width:100%;padding:8px;border-radius:6px;border:none;">
+  <button id="saveNewKeyBtn" style="margin-top:6px;background:#16a34a;">
+    Save Key
+  </button>
+</div>
+
+<button id="deleteKeysBtn" style="background:#b91c1c;">Delete Selected Keys</button>
+<button id="fixRTL">Fix RTL Brackets</button>
+
+  
 
   <script src="aiFixerPopup.js"></script>
 </body>

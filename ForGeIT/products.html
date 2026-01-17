@@ -35,14 +35,23 @@
   <main>
 <section class="features">
   <h2 class="section-title">Features</h2>
-
+  <!-- CSS Selector -->
+  <div class="feature-group">
+    <h3 class="feature-group-title">CSS Selector</h3>
+    <div class="feature-grid">
+      <div class="feature-card" data-feature="CSS Selector">
+        <h3>CSS Selector</h3>
+      </div>
+    </div>
+  </div>
   <!-- Cleaning & Formatting -->
   <div class="feature-group">
+    <h3 class="feature-group-title">Table of Contents</h3>
+    <div class="feature-card" data-feature="Generate TOC">
+        <h3>Generate TOC</h3>
+      </div>
     <h3 class="feature-group-title">Cleaning & Formatting</h3>
     <div class="feature-grid">
-      <div class="feature-card" data-feature="Remove Styles">
-        <h3>Remove Styles</h3>
-      </div>
       <div class="feature-card" data-feature="Remove Classes & IDs">
         <h3>Remove Classes & IDs</h3>
       </div>
@@ -64,12 +73,21 @@
       <div class="feature-card" data-feature="Hyperlink Cleaner">
         <h3>Hyperlink Cleaner</h3>
       </div>
+      <div class="feature-card" data-feature="Stylings Toolbar">
+        <h3>Append Stylings</h3>
+      </div>
+      <div class="feature-card" data-feature="XML to HTML">
+        <h3>Convert XML to HTML</h3>
+      </div>
+      <div class="feature-card" data-feature="Lossless Cleaner">
+        <h3>HTML Cleaner</h3>
+      </div>
     </div>
   </div>
 
   <!-- Editing Tools -->
   <div class="feature-group">
-    <h3 class="feature-group-title">Editing Tools</h3>
+    <h3 class="feature-group-title">Content Editor</h3>
     <div class="feature-grid">
       <div class="feature-card" data-feature="Heading Assigner">
         <h3>Heading Assigner</h3>
@@ -77,29 +95,12 @@
       <div class="feature-card" data-feature="Inline Editing">
         <h3>Inline Editing</h3>
       </div>
-      <div class="feature-card" data-feature="Line Break Fixer">
-        <h3>Line Break Fixer</h3>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hyperlink Tools -->
-  <div class="feature-group">
-    <h3 class="feature-group-title">Hyperlink Tools</h3>
-    <div class="feature-grid">
       <div class="feature-card" data-feature="Hyperlink Injector">
         <h3>Hyperlink Injector</h3>
       </div>
-      <div class="feature-card" data-feature="Broken Link Checker">
-        <h3>Broken Link Checker</h3>
+      <div class="feature-card" data-feature="OCR Tool">
+        <h3>OCR Image to Text</h3>
       </div>
-    </div>
-  </div>
-
-  <!-- Image & Table Tools -->
-  <div class="feature-group">
-    <h3 class="feature-group-title">Image & Table Tools</h3>
-    <div class="feature-grid">
       <div class="feature-card" data-feature="Image Inserter">
         <h3>Image Inserter</h3>
       </div>
@@ -112,22 +113,53 @@
       <div class="feature-card" data-feature="Table Editor">
         <h3>Table Editor</h3>
       </div>
+      <div class="feature-card" data-feature="PDF to HTML Converter">
+        <h3>Convert PDF to HTML (beta)</h3>
+      </div>
     </div>
   </div>
-
-  <!-- Export & Validation -->
+  <!-- RTL Tools -->
   <div class="feature-group">
-    <h3 class="feature-group-title">Export & Validation</h3>
+    <h3 class="feature-group-title">RTL Tools</h3>
+    <div class="feature-grid">
+      <div class="feature-card" data-feature="RTL Auto Fix">
+        <h3>RTL/LTR Aligner</h3>
+      </div>
+      <div class="feature-card" data-feature="RTL Punctuation Fixer">
+        <h3>Fix Brackets (Ai)</h3>
+      </div>
+      <div class="feature-card" data-feature="Multilingual List & Prefix Fixer">
+        <h3>Fix RTL Lists</h3>
+      </div>
+      <div class="feature-card" data-feature="RTL Table Fix">
+        <h3>Fix RTL Tables</h3>
+      </div>
+      <div class="feature-card" data-feature="RTL Line-Break Fix">
+        <h3>RTL Line-Break Fix</h3>
+      </div>
+    </div>
+  </div>
+  <!-- Export -->
+  <div class="feature-group">
+    <h3 class="feature-group-title">Export</h3>
     <div class="feature-grid">
       <div class="feature-card" data-feature="Export">
         <h3>Export to PDF,Html, word, MD, Excell</h3>
       </div>
-      <div class="feature-card" data-feature="HTML Validator">
+      <div class="feature-card" data-feature="PDF Downloader">
+        <h3>PDF Downloader</h3>
+      </div>
+    </div>
+  </div>
+  <!-- Validation -->
+  <div class="feature-group">
+    <h3 class="feature-group-title">Validation</h3>
+    <div class="feature-grid">
+<div class="feature-card" data-feature="HTML Validator">
         <h3>HTML Validator</h3>
       </div>
     </div>
   </div>
-
   <!-- Advanced & Extra Tools -->
   <div class="feature-group">
     <h3 class="feature-group-title">Advanced & Extra Tools</h3>
@@ -137,15 +169,6 @@
       </div>
       <div class="feature-card" data-feature="Auto Footnote Generator">
         <h3>Auto Footnote Generator</h3>
-      </div>
-      <div class="feature-card" data-feature="TOC">
-        <h3>Generate TOC</h3>
-      </div>
-      <div class="feature-card" data-feature="CSS Selector">
-        <h3>CSS Selector</h3>
-      </div>
-      <div class="feature-card" data-feature="PDF Downloader">
-        <h3>PDF Downloader</h3>
       </div>
     </div>
   </div>
@@ -393,6 +416,550 @@
     <li>Cleans up extra colors, fonts, margins, or other formatting directly applied to elements.</li>
     <li>Restores the page to its default look defined only by external CSS.</li>
     <li>Shows a confirmation message once the cleanup is complete.</li>
+  </ul>
+</div>
+
+<div class="workflow-details" data-feature="Generate TOC">
+  <p><strong>Generates an interactive, floating Table of Contents (TOC) from the current page.</strong></p>
+
+  <ul>
+    <li><strong>Collect Headings</strong>
+      <ul>
+        <li>Scans all headings from <code>h1</code> to <code>h15</code> in visual order.</li>
+        <li>Shows a message if no headings are found.</li>
+      </ul>
+    </li>
+
+    <li><strong>Auto ID Assignment</strong>
+      <ul>
+        <li>Keeps existing IDs.</li>
+        <li>Generates IDs automatically for headings without one.</li>
+      </ul>
+    </li>
+
+    <li><strong>Floating TOC Panel</strong>
+      <ul>
+        <li>Appears as a modern panel on the right.</li>
+        <li>Draggable, resizable, animated, and closable.</li>
+      </ul>
+    </li>
+
+    <li><strong>Structured Nested TOC</strong>
+      <ul>
+        <li>Creates a properly nested list based on heading levels.</li>
+        <li>Each item shows an H-level label, clickable text, and expand/collapse arrow.</li>
+      </ul>
+    </li>
+
+    <li><strong>Smooth Navigation</strong>
+      <ul>
+        <li>Clicking an item scrolls smoothly to the heading.</li>
+        <li>The heading is highlighted briefly for visibility.</li>
+      </ul>
+    </li>
+
+    <li><strong>Search Filter</strong>
+      <ul>
+        <li>Live filter box to quickly find headings.</li>
+      </ul>
+    </li>
+
+    <li><strong>Insert TOC into Page</strong>
+      <ul>
+        <li>Inserts a styled TOC before the first heading.</li>
+      </ul>
+    </li>
+
+    <li><strong>Copy & Export</strong>
+      <ul>
+        <li>Copy TOC as HTML to clipboard.</li>
+        <li>Export as a standalone <code>toc.html</code> file.</li>
+      </ul>
+    </li>
+
+    <li><strong>Collapse / Expand</strong>
+      <ul>
+        <li>Collapse or expand all nested headings.</li>
+      </ul>
+    </li>
+
+    <li><strong>Color Customization</strong>
+      <ul>
+        <li>Set custom colors for H1–H15 inside the TOC.</li>
+        <li>Colors are saved and restored automatically.</li>
+      </ul>
+    </li>
+
+    <li><strong>Refresh</strong>
+      <ul>
+        <li>Reload button regenerates the TOC after edits.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="Stylings Toolbar">
+  <p><strong>Provides a floating, selection-based styling toolbar for rich text formatting directly on the page.</strong></p>
+
+  <ul>
+    <li><strong>Toggle Toolbar</strong>
+      <ul>
+        <li>Clicking the Stylings button injects a floating toolbar into the page.</li>
+        <li>Clicking it again removes the toolbar.</li>
+      </ul>
+    </li>
+
+    <li><strong>Context-Aware Positioning</strong>
+      <ul>
+        <li>The toolbar appears automatically above selected text.</li>
+        <li>It hides when no text is selected.</li>
+        <li>Repositions dynamically as you change selection.</li>
+      </ul>
+    </li>
+
+    <li><strong>Formatting Controls</strong>
+      <ul>
+        <li>Bold (<code>Ctrl+B</code>) → wraps selection in <code>&lt;b&gt;</code>.</li>
+        <li>Italic (<code>Ctrl+I</code>) → wraps selection in <code>&lt;i&gt;</code>.</li>
+        <li>Underline (<code>Ctrl+U</code>) → wraps selection in <code>&lt;u&gt;</code>.</li>
+        <li>Strikethrough (<code>Alt+Shift+5</code>) → wraps selection in <code>&lt;s&gt;</code>.</li>
+        <li>Subscript (<code>Ctrl+,</code>) → wraps selection in <code>&lt;sub&gt;</code>.</li>
+        <li>Superscript (<code>Ctrl+.</code>) → wraps selection in <code>&lt;sup&gt;</code>.</li>
+      </ul>
+    </li>
+
+    <li><strong>Smart Selection Handling</strong>
+      <ul>
+        <li>Works only when text is actually selected (not collapsed).</li>
+        <li>Extracts selected content, wraps it in the chosen tag, and reinserts it.</li>
+        <li>Clears the selection after applying style.</li>
+      </ul>
+    </li>
+
+    <li><strong>Active Button Highlight</strong>
+      <ul>
+        <li>Toolbar buttons highlight automatically when the cursor is inside styled text.</li>
+        <li>Detects styles using both browser state and existing HTML tags.</li>
+      </ul>
+    </li>
+
+    <li><strong>Undo / Redo Support</strong>
+      <ul>
+        <li>Automatically saves a snapshot before every styling change.</li>
+        <li>Supports up to 50 undo steps.</li>
+        <li><code>Ctrl+Z</code> → Undo.</li>
+        <li><code>Ctrl+Y</code> → Redo.</li>
+        <li>Toolbar itself is excluded from snapshots.</li>
+      </ul>
+    </li>
+
+    <li><strong>Non-Intrusive UI</strong>
+      <ul>
+        <li>Floating, lightweight, and draggable-friendly design.</li>
+        <li>Styled with minimal CSS injected only for the toolbar.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="XML to HTML">
+  <p><strong>Converts structured XML documents into clean, usable HTML directly inside the current page.</strong></p>
+
+  <ul>
+    <li><strong>Upload XML</strong>
+      <ul>
+        <li>Click the button and select an XML file from your computer.</li>
+      </ul>
+    </li>
+
+    <li><strong>Automatic Conversion</strong>
+      <ul>
+        <li>Parses the XML and transforms it into proper HTML.</li>
+        <li>Converts <code>&lt;level&gt;</code> + <code>&lt;title&gt;</code> into real headings (<code>h1–h15</code>).</li>
+        <li>Converts <code>&lt;url&gt;</code> tags into clickable links.</li>
+      </ul>
+    </li>
+
+    <li><strong>Footnote Handling</strong>
+      <ul>
+        <li>Converts <code>&lt;footnoteref&gt;</code> into clickable superscripts.</li>
+        <li>Reformats <code>&lt;footnote&gt;</code> blocks into clean HTML footnotes.</li>
+      </ul>
+    </li>
+
+    <li><strong>Cleanup</strong>
+      <ul>
+        <li>Removes unwanted wrappers like <code>&lt;document&gt;</code>, <code>&lt;metadata&gt;</code>, and <code>&lt;level&gt;</code>.</li>
+        <li>Deletes empty or self-closing <code>&lt;p&gt;</code> tags.</li>
+        <li>Strips unnecessary <code>&lt;span&gt;</code> tags inside footnotes.</li>
+      </ul>
+    </li>
+
+    <li><strong>Apply to Page</strong>
+      <ul>
+        <li>Replaces the current page content with the converted HTML.</li>
+        <li>Automatically runs your Lossless Cleaner if available.</li>
+        <li>Shows success or error toast messages.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="Lossless Cleaner">
+  <p><strong>Cleans HTML without altering structure inside tables or footnotes.</strong></p>
+
+  <ul>
+    <li><strong>Remove Empty Elements</strong>
+      <ul>
+        <li>Deletes empty <code>&lt;p&gt;</code> and <code>&lt;p&gt;&lt;br&gt;&lt;/p&gt;</code>.</li>
+        <li>Removes empty headings (<code>h1–h15</code>).</li>
+        <li>Removes empty <code>&lt;div&gt;</code> elements.</li>
+        <li>Skips anything inside tables or footnotes.</li>
+      </ul>
+    </li>
+
+    <li><strong>Normalize Whitespace</strong>
+      <ul>
+        <li>Collapses multiple spaces/newlines into a single space.</li>
+        <li>Trims leading and trailing spaces in text nodes.</li>
+        <li>Preserves table content exactly.</li>
+      </ul>
+    </li>
+
+    <li><strong>Feedback</strong>
+      <ul>
+        <li>Shows a success toast: “Cleanup completed (empty tags removed + whitespace normalized)”.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="workflow-details" data-feature="&lt;span&gt; Tags">
+  <p><strong>Removes all &lt;span&gt; elements while preserving their inner content.</strong></p>
+
+  <ul>
+    <li><strong>Scan & Target</strong>
+      <ul>
+        <li>Finds every <code>&lt;span&gt;</code> element on the page.</li>
+      </ul>
+    </li>
+
+    <li><strong>Preserve Content</strong>
+      <ul>
+        <li>Moves all child text and elements inside each <code>&lt;span&gt;</code> back to its parent.</li>
+        <li>Ensures no text, links, or formatting inside the span is lost.</li>
+      </ul>
+    </li>
+
+    <li><strong>Remove Wrapper</strong>
+      <ul>
+        <li>Deletes the empty <code>&lt;span&gt;</code> tag after its contents are extracted.</li>
+      </ul>
+    </li>
+
+    <li><strong>Page Feedback</strong>
+      <ul>
+        <li>Displays a success toast message: “All &lt;span&gt; tags removed successfully”.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="OCR Tool">
+  <p><strong>Extracts text from images or PDF pages using OCR, with cropping and HTML output.</strong></p>
+
+  <ul>
+    <li><strong>Input Options</strong>
+      <ul>
+        <li>Upload an image file.</li>
+        <li>Upload a PDF and select any page.</li>
+        <li>Paste an image directly from clipboard.</li>
+      </ul>
+    </li>
+
+    <li><strong>Preview & Crop</strong>
+      <ul>
+        <li>Displays the image/PDF page on a canvas.</li>
+        <li>Draw, move, and resize a crop box.</li>
+        <li>Press <code>Enter</code> to apply the crop.</li>
+        <li>Supports Undo (<code>Ctrl+Z</code>) and Redo (<code>Ctrl+Y</code>).</li>
+      </ul>
+    </li>
+
+    <li><strong>OCR Processing</strong>
+      <ul>
+        <li>Sends the selected (or cropped) image to the OCR server.</li>
+        <li>Shows real-time upload progress.</li>
+        <li>Returns extracted text in the result box.</li>
+      </ul>
+    </li>
+
+    <li><strong>HTML Conversion</strong>
+      <ul>
+        <li>Automatically converts extracted text into clean <code>&lt;p&gt;</code> paragraphs.</li>
+        <li>Displays generated HTML in a separate panel.</li>
+      </ul>
+    </li>
+
+    <li><strong>Copy Options</strong>
+      <ul>
+        <li>Copy plain OCR text.</li>
+        <li>Copy formatted HTML output.</li>
+      </ul>
+    </li>
+
+    <li><strong>Reset</strong>
+      <ul>
+        <li>Clear all inputs, canvas, and results.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="PDF to HTML Converter">
+  <p><strong>Converts PDF documents into structured, clean HTML using a hybrid PDF.js + AI pipeline.</strong></p>
+
+  <ul>
+    <li><strong>Upload PDF</strong>
+      <ul>
+        <li>Select a PDF file to enable conversion.</li>
+      </ul>
+    </li>
+
+    <li><strong>Page-by-Page Processing</strong>
+      <ul>
+        <li>Renders each page via PDF.js.</li>
+        <li>Extracts structured text layout (lines, blocks, positions, font sizes).</li>
+        <li>Detects real tables automatically.</li>
+      </ul>
+    </li>
+
+    <li><strong>AI Cleanup & Formatting</strong>
+      <ul>
+        <li>Sends structured data to AI for semantic cleanup.</li>
+        <li>Fixes broken words and hyphenated line breaks.</li>
+        <li>Rebuilds URLs, lists, Q&A sections, and tables.</li>
+        <li>Outputs clean semantic HTML (no divs, spans, or inline styles).</li>
+      </ul>
+    </li>
+
+    <li><strong>Optional Image Fallback</strong>
+      <ul>
+        <li>Can embed a rendered image of each page below the extracted content.</li>
+      </ul>
+    </li>
+
+    <li><strong>Progress & Logging</strong>
+      <ul>
+        <li>Shows real-time progress bar and status logs.</li>
+      </ul>
+    </li>
+
+    <li><strong>Download Output</strong>
+      <ul>
+        <li>Generates a complete standalone HTML file for download.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="RTL Auto Fix">
+  <p><strong>Allows quick, keyboard-based control of text direction (LTR/RTL) for paragraphs.</strong></p>
+
+  <ul>
+    <li><strong>Toggle Mode</strong>
+      <ul>
+        <li>Click once to enable RTL mode.</li>
+        <li>Click again to disable it.</li>
+      </ul>
+    </li>
+
+    <li><strong>Keyboard Controls (when enabled)</strong>
+      <ul>
+        <li><code>ALT + ←</code> → Add <code>dir="rtl"</code> to selected/overlapping paragraphs.</li>
+        <li><code>ALT + →</code> → Remove <code>dir</code> attribute (restore LTR).</li>
+      </ul>
+    </li>
+
+    <li><strong>Smart Targeting</strong>
+      <ul>
+        <li>Applies only to paragraphs intersecting your text selection.</li>
+        <li>Ignores paragraphs inside tables.</li>
+        <li>Removes inline styles before applying direction.</li>
+      </ul>
+    </li>
+
+    <li><strong>Feedback</strong>
+      <ul>
+        <li>Shows a toast message when enabled or disabled.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="Multilingual List & Prefix Fixer">
+  <p><strong>Normalizes list direction and converts numbers to language-appropriate formats across the page.</strong></p>
+
+  <ul>
+    <li><strong>Language Selection</strong>
+      <ul>
+        <li>Opens a searchable modal with ~58 supported languages.</li>
+        <li>Shows whether a language is RTL or LTR.</li>
+      </ul>
+    </li>
+
+    <li><strong>User Options</strong>
+      <ul>
+        <li>Convert number prefixes at the start of <code>&lt;p&gt;</code>.</li>
+        <li>Convert numbers inside tables (optional).</li>
+        <li>Convert inline numbers inside paragraphs (optional).</li>
+      </ul>
+    </li>
+
+    <li><strong>List Formatting</strong>
+      <ul>
+        <li>Sets correct LTR/RTL direction for <code>&lt;ul&gt;</code> and <code>&lt;ol&gt;</code>.</li>
+        <li>Aligns text and padding based on language direction.</li>
+        <li>Rewrites <code>&lt;ol&gt;</code> numbering using native digits / scripts.</li>
+      </ul>
+    </li>
+
+    <li><strong>Paragraph Number Fix</strong>
+      <ul>
+        <li>Converts numeric prefixes like “1.”, “(2)” to the selected language format.</li>
+      </ul>
+    </li>
+
+    <li><strong>Table Support</strong>
+      <ul>
+        <li>Optionally converts numbers inside <code>&lt;td&gt;</code> and <code>&lt;th&gt;</code>.</li>
+      </ul>
+    </li>
+
+    <li><strong>Confirmation</strong>
+      <ul>
+        <li>Shows a success alert naming the applied language.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="RTL Table Fix">
+  <p><strong>Keyboard-based control of table text direction and horizontal position.</strong></p>
+
+  <ul>
+    <li><strong>Toggle Mode</strong>
+      <ul>
+        <li>Click once to enable table control mode.</li>
+        <li>Click again to disable it.</li>
+      </ul>
+    </li>
+
+    <li><strong>Text Direction (when enabled)</strong>
+      <ul>
+        <li><code>ALT + ←</code> → Set table content to <code>dir="rtl"</code>.</li>
+        <li><code>ALT + →</code> → Set table content to <code>dir="ltr"</code>.</li>
+      </ul>
+    </li>
+
+    <li><strong>Table Position</strong>
+      <ul>
+        <li><code>CTRL + ALT + →</code> → Align table to the right.</li>
+        <li><code>CTRL + ALT + ←</code> → Align table to the left.</li>
+      </ul>
+    </li>
+
+    <li><strong>Smart Targeting</strong>
+      <ul>
+        <li>Automatically finds the table nearest to your text cursor.</li>
+        <li>Applies direction to all cells and inner elements.</li>
+      </ul>
+    </li>
+
+    <li><strong>Feedback</strong>
+      <ul>
+        <li>Shows a toast message when enabled or disabled.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="RTL Line-Break Fix">
+  <p><strong>Enables smart, keyboard-based paragraph splitting and merging for RTL text.</strong></p>
+
+  <ul>
+    <li><strong>Toggle Mode</strong>
+      <ul>
+        <li>Click once to enable the line-break editor.</li>
+        <li>Click again to disable it.</li>
+      </ul>
+    </li>
+
+    <li><strong>Enter — Split Paragraph</strong>
+      <ul>
+        <li>Press <code>Enter</code> inside a paragraph to split it at the cursor.</li>
+        <li>Creates two clean paragraphs without extra spaces.</li>
+      </ul>
+    </li>
+
+    <li><strong>Backspace — Merge Paragraphs</strong>
+      <ul>
+        <li>Press <code>Backspace</code> at the start of a paragraph to merge it with the previous one.</li>
+        <li>Preserves proper spacing between words.</li>
+      </ul>
+    </li>
+
+    <li><strong>Live Editing</strong>
+      <ul>
+        <li>Temporarily enables <code>designMode</code> and <code>contentEditable</code>.</li>
+      </ul>
+    </li>
+
+    <li><strong>Feedback</strong>
+      <ul>
+        <li>Shows a toast message when enabled or disabled.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<div class="workflow-details" data-feature="RTL Punctuation Fixer">
+  <p><strong>Automatically detects and corrects RTL punctuation using AI, processing text in safe chunks.</strong></p>
+
+  <ul>
+    <li><strong>Smart Detection</strong>
+      <ul>
+        <li>Scans the page for text nodes containing RTL characters and punctuation.</li>
+        <li>Ignores nodes without relevant RTL content.</li>
+      </ul>
+    </li>
+
+    <li><strong>Chunk-Based AI Processing</strong>
+      <ul>
+        <li>Splits text into safe 40-line chunks.</li>
+        <li>Sends each chunk to Gemini with strict punctuation rules.</li>
+        <li>Automatically switches API keys when limits are reached.</li>
+      </ul>
+    </li>
+
+    <li><strong>Strict Correction Rules</strong>
+      <ul>
+        <li>Only fixes punctuation — never words or spaces.</li>
+        <li>Respects RTL, LTR, and East Asian punctuation behavior.</li>
+        <li>Corrects bracket placement and duplicated punctuation.</li>
+      </ul>
+    </li>
+
+    <li><strong>Live Progress UI</strong>
+      <ul>
+        <li>Shows a full-screen progress panel.</li>
+        <li>Displays current chunk, line number, and percentage.</li>
+      </ul>
+    </li>
+
+    <li><strong>Safe Application</strong>
+      <ul>
+        <li>Applies fixes line-by-line to original text nodes.</li>
+        <li>Falls back to original text if AI output is invalid.</li>
+      </ul>
+    </li>
+
+    <li><strong>Completion</strong>
+      <ul>
+        <li>Notifies when all lines are processed.</li>
+        <li>Automatically removes the overlay.</li>
+      </ul>
+    </li>
   </ul>
 </div>
 

@@ -286,6 +286,10 @@
 
 </head>
 <body>
+
+<!-- STATUS MESSAGE -->
+<div id="status-message" class="status-message hidden"></div>
+
 <sidebar-menu>
   <nav slot="default">
     <a href="#">Products</a>
@@ -330,29 +334,91 @@
       <h3>Table of Contents</h4>
       <button id="generateTocBtn" class="btn-action">Generate TOC</button>
     </div>
-    <!-- Existing Option Groups -->
-    <div id="remover-options" class="option-group hidden">
-  <h3>Content Cleanup Tools</h4>
-  <div class="button-grid">
-    <button id="remove-style-btn">Remove Stylings</button>
-    <button id="remove-attributes">Remove Classes & IDs</button>
-    <button id="remove-nbsp-btn">Remove nbsp;</button>
-    <button id="remove-span-btn">Remove &lt;span&gt; Tags</button>
-    <button id="remove-ul-li">Replace &lt;li&gt; with &lt;p&gt;</button>
-    <button id="remove-unicode">Fix Unicode Entities</button>
-    <button id="clean-google-links">Hyperlink Cleaner</button>
+<!-- Content Cleanup Tools -->
+<div id="remover-options" class="option-group hidden">
+  <h3>Content Cleanup Tools</h3>
+
+  <div class="button-grid batch-actions">
+
+    <!-- Remove Stylings -->
+    <!--<div class="action-btn-wrapper">-->
+      <!--<button id="remove-style-btn" class="action-btn">-->
+        <!--Remove Stylings-->
+      <!--</button>-->
+      <!--<input type="checkbox" class="action-toggle" data-action="removeStyles">-->
+    <!--</div>-->
+
+    <!-- Remove Classes & IDs -->
+    <div class="action-btn-wrapper">
+      <button id="remove-attributes" class="action-btn">
+        Remove Classes & IDs
+      </button>
+      <input type="checkbox" class="action-toggle" data-action="removeClasses">
+    </div>
+
+    <!-- Remove nbsp -->
+    <div class="action-btn-wrapper">
+      <button id="remove-nbsp-btn" class="action-btn">
+        Remove nbsp;
+      </button>
+      <input type="checkbox" class="action-toggle" data-action="removeNbsp">
+    </div>
+
+    <!-- Remove span -->
+    <div class="action-btn-wrapper">
+      <button id="remove-span-btn" class="action-btn">
+        Remove &lt;span&gt; Tags
+      </button>
+      <input type="checkbox" class="action-toggle" data-action="removeSpan">
+    </div>
+
+    <!-- Replace li -->
+    <div class="action-btn-wrapper">
+      <button id="remove-ul-li" class="action-btn">
+        Replace &lt;li&gt; with &lt;p&gt;
+      </button>
+      <input type="checkbox" class="action-toggle" data-action="replaceLi">
+    </div>
+
+    <!-- Fix Unicode -->
+    <div class="action-btn-wrapper">
+      <button id="remove-unicode" class="action-btn">
+        Fix Unicode Entities
+      </button>
+      <input type="checkbox" class="action-toggle" data-action="fixUnicode">
+    </div>
+
+    <!-- Hyperlink Cleaner -->
+    <div class="action-btn-wrapper">
+      <button id="clean-google-links" class="action-btn">
+        Hyperlink Cleaner
+      </button>
+      <input type="checkbox" class="action-toggle" data-action="cleanLinks">
+    </div>
+
+    <!-- NON-BATCH -->
     <button id="organize">Organize HTML</button>
+    <button id="lossless-cleaner">HTML Cleaner</button>
+    <button id="xml-to-html" title="Select an XML file and convert it to clean HTML">
+  Convert XML to HTML
+</button>
     <button id="stylings-btn">Append Stylings</button>
-   </div>
   </div>
+</div>
+
+<!-- Floating Execute Button -->
+<button id="batchExecuteBtn" class="batch-execute hidden">
+  Execute
+</button>
+
     <div id="content-editor-option" class="option-group hidden">
       <h3>Content Editor</h4>
       <div class="button-grid">
       <button id="assign-heading" class="highlightable">Activate Heading Mode</button>
       <button id="enable-inline-editing" class="highlightable">Enable Inline Editing</button>
       <button id="hyperlink-injector">Hyperlink Injector</button>
-      <button id="activate-content-editor" class="highlightable">Activate Line Break Fixer</button>
-      <button id="broken-link-checker">Broken URL Verifier</button>
+      <!--<button id="activate-content-editor" class="highlightable">Activate Line Break Fixer</button>-->
+      <!--<button id="broken-link-checker">Broken URL Verifier</button>-->
       <button id="openOcrTool">OCR Image to Text</button>
       <button id="open-gemini">Open Image to Table Converter</button>
       <button id="activate-image-inserter" class="highlightable">Activate Image Inserter</button>
@@ -517,6 +583,8 @@
       <a href="#">Help</a>
     </div>
   </div>
+  <!-- Hidden file picker for XML to HTML converter -->
+<input type="file" id="xml-file-input" accept=".xml,text/xml" style="display:none;">
     <link rel="stylesheet" href="popup.css" />
     <script type="module" src="popup.js"></script>
     <script src="sidebar-menu.js"></script>

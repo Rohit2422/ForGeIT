@@ -1268,3 +1268,73 @@ button.active {
   border-color: #28a745 !important;
   box-shadow: 0 0 6px rgba(40, 167, 69, 0.6);
 }
+/* ===============================
+   BATCH ACTION BUTTON + TOGGLE
+================================ */
+
+.action-btn-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.action-btn {
+  width: 100%;
+  padding-right: 36px;
+  text-align: left;
+}
+
+.action-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* Visual selected state */
+.action-btn-wrapper:has(.action-toggle:checked) .action-btn {
+  background: #5da9ff;
+  color: #fff;
+}
+
+/* Floating execute */
+.batch-execute {
+  position: sticky;
+  bottom: 8px;
+  width: 100%;
+  background: #28a745;
+  color: #fff;
+  font-weight: bold;
+}
+
+.batch-execute.hidden {
+  display: none;
+}
+/* ===============================
+   TOP CENTER STATUS MESSAGE
+================================ */
+
+.status-message {
+  position: fixed;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #28a745;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  z-index: 100000;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.status-message.show {
+  opacity: 1;
+}
+
+.status-message.hidden {
+  display: none;
+}

@@ -2,33 +2,257 @@
 // Load API Key
 // ===========================
 document.addEventListener("DOMContentLoaded", () => {
-  chrome.storage.local.get(["geminiKey"], (res) => {
-    if (res.geminiKey) {
-      document.getElementById("apiKey").value = res.geminiKey;
+
+  chrome.storage.local.get(["geminiKeys","activeIndex"], (res) => {
+
+    let keys = res.geminiKeys || [];
+    let idx  = res.activeIndex ?? 0;
+
+    // if there are keys but index is out of range → fix it
+    if (idx >= keys.length) idx = 0;
+
+    chrome.storage.local.set({ activeIndex: idx }, () => {
+      renderKeysUI(keys, idx);   // ⬅️ ALWAYS render here
+      updateApiUsageDisplay();
+    });
+  });
+
+});
+
+function renderKeysUI(keys, activeIndex) {
+  const box = document.getElementById("keysContainer");
+  box.innerHTML = "";
+
+  keys.forEach((item, i) => {
+    const remainingLines = Math.max(0, 400 - item.usedLines);
+    const remainingChunks = Math.ceil(remainingLines / 40);
+
+    const div = document.createElement("div");
+    div.style.marginTop = "8px";
+    div.style.padding = "10px";
+    div.style.borderRadius = "6px";
+    div.style.background = "#181818";
+    div.style.border = i === activeIndex 
+      ? "1px solid #4ade80" 
+      : "1px solid #2a2a2a";
+
+    div.innerHTML = `
+  <div style="display:flex;align-items:center;gap:6px;">
+    <div style="font-size:12px;color:#aaa;">
+      Key ${i + 1} ${i === activeIndex ? "(Current)" : ""}
+    </div>
+
+    <input type="checkbox" class="keySelect" data-index="${i}">
+  </div>
+
+  <input type="text" value="${item.key}" style="width:100%;margin-top:6px;">
+
+  <div style="font-size:12px;color:#bbb;margin-top:4px;">
+    Remaining: ${remainingChunks} chunks (${remainingLines} lines)
+  </div>
+`;
+
+
+    div.addEventListener("click", (e) => {
+
+  // ⛔ ignore clicks on checkbox
+  if (e.target.classList.contains("keySelect")) return;
+
+  chrome.storage.local.set({ activeIndex: i }, () => {
+    renderKeysUI(keys, i);
+  });
+
+});
+
+
+box.appendChild(div);
+  });
+}
+// ===========================
+// API USAGE DISPLAY (TOTAL ACROSS ALL KEYS)
+// ===========================
+function updateApiUsageDisplay() {
+
+  chrome.storage.local.get(["geminiKeys"], (res) => {
+
+    const keys = res.geminiKeys || [];
+
+    const MAX_CHUNKS_PER_KEY = 10;
+    const LINES_PER_CHUNK   = 40;
+
+    // TOTAL capacity across ALL keys
+    const totalCapacityLines = keys.length * MAX_CHUNKS_PER_KEY * LINES_PER_CHUNK;
+
+    let usedLines = 0;
+    keys.forEach(k => usedLines += (k.usedLines || 0));
+
+    const usedChunks      = Math.ceil(usedLines / LINES_PER_CHUNK);
+    const remainingLines  = Math.max(0, totalCapacityLines - usedLines);
+    const remainingChunks = Math.ceil(remainingLines / LINES_PER_CHUNK);
+
+    // Fill UI values
+    document.getElementById("apiLimitChunks").textContent     = keys.length * MAX_CHUNKS_PER_KEY;
+    document.getElementById("apiLimitLines").textContent      = totalCapacityLines;
+
+    document.getElementById("apiUsedChunks").textContent      = usedChunks;
+    document.getElementById("apiUsedLines").textContent       = usedLines;
+
+    document.getElementById("apiRemainingChunks").textContent = remainingChunks;
+    document.getElementById("apiRemainingLines").textContent  = remainingLines;
+
+    // animated bar
+    const percent = totalCapacityLines === 0
+      ? 0
+      : Math.min((usedLines / totalCapacityLines) * 100, 100);
+
+    const bar = document.getElementById("apiUsageBar");
+    bar.style.transition = "width .45s ease-out";
+    bar.style.width = percent + "%";
+
+    bar.style.background =
+      percent >= 90 ? "#e53935" :
+      percent >= 70 ? "#ff9800" :
+      "#4caf50";
+  });
+}
+// listen for usage updates from content script
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "RTL_USAGE") {
+
+  chrome.storage.local.get(["geminiKeys","activeIndex"], (res) => {
+
+    const keys = res.geminiKeys || [];
+    let idx = res.activeIndex || 0;
+
+    if (!keys[idx]) return;
+
+    // NO usage modification here
+
+    chrome.storage.local.set({
+      geminiKeys: keys,
+      activeIndex: idx
+    }, () => {
+      renderKeysUI(keys, idx);
+      updateApiUsageDisplay();
+    });
+
+  });
+}
+
+});
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+
+  if (msg.type === "GET_NEXT_KEY") {
+
+    chrome.storage.local.get(["geminiKeys","activeIndex"], (res) => {
+      let keys = res.geminiKeys || [];
+      let idx  = res.activeIndex ?? 0;
+
+      while (idx < keys.length && keys[idx].usedLines >= 400) idx++;
+
+      if (idx >= keys.length) {
+        sendResponse({ key: null });
+        return;
+      }
+
+      chrome.storage.local.set({ activeIndex: idx }, () => {
+        sendResponse({ key: keys[idx].key, index: idx });
+      });
+    });
+
+    return true;
+  }
+
+  if (msg.type === "CONSUME_LINES") {
+
+    chrome.storage.local.get(["geminiKeys","activeIndex"], (res) => {
+
+      const keys = res.geminiKeys || [];
+      let idx = res.activeIndex ?? 0;
+
+      if (!keys[idx]) return;
+
+      keys[idx].usedLines += msg.lines;
+
+      chrome.storage.local.set({ geminiKeys: keys }, () => {
+        renderKeysUI(keys, idx);
+updateApiUsageDisplay();
+sendResponse({ ok:true });
+      });
+    });
+
+    return true;
+  }
+});
+
+const addKeyPanel = document.getElementById("addKeyPanel");
+const newKeyInput = document.getElementById("newKeyInput");
+
+document.getElementById("addKeyBtn").addEventListener("click", () => {
+  addKeyPanel.style.display = "block";
+  newKeyInput.focus();
+});
+document.getElementById("saveNewKeyBtn").addEventListener("click", () => {
+
+  const newKey = newKeyInput.value.trim();
+  if (!newKey) return;
+
+  chrome.storage.local.get(["geminiKeys"], (res) => {
+
+    const arr = res.geminiKeys || [];
+
+    arr.push({
+      key: newKey,
+      usedLines: 0
+    });
+
+    chrome.storage.local.set({ geminiKeys: arr }, () => {
+
+      newKeyInput.value = "";
+      addKeyPanel.style.display = "none";
+
+      renderKeysUI(arr, arr.length - 1);
+      updateApiUsageDisplay();
+    });
+  });
+
+});
+
+document.getElementById("deleteKeysBtn").addEventListener("click", () => {
+
+  chrome.storage.local.get(["geminiKeys","activeIndex"], (res) => {
+
+    let keys = res.geminiKeys || [];
+    let idx  = res.activeIndex ?? 0;
+
+    // collect selected checkboxes
+    const selected = Array.from(
+      document.querySelectorAll(".keySelect:checked")
+    ).map(cb => Number(cb.dataset.index));
+
+    if (!selected.length) {
+      alert("Select at least one key to delete.");
+      return;
     }
+
+    // filter out deleted keys
+    keys = keys.filter((_, i) => !selected.includes(i));
+
+    // fix active index
+    if (idx >= keys.length) idx = keys.length - 1;
+    if (idx < 0) idx = 0;
+
+    chrome.storage.local.set({
+      geminiKeys: keys,
+      activeIndex: idx
+    }, () => {
+      renderKeysUI(keys, idx);
+      updateApiUsageDisplay();
+    });
+
   });
+
 });
-
-// ===========================
-// Save API Key
-// ===========================
-document.getElementById("saveKey").addEventListener("click", () => {
-  const key = document.getElementById("apiKey").value.trim();
-  const msg = document.getElementById("saveMsg");
-
-  chrome.storage.local.set({ geminiKey: key }, () => {
-    
-    // Show success text
-    msg.textContent = "API key saved";
-    msg.style.opacity = "1";
-
-    // Hide after 2 seconds
-    setTimeout(() => {
-      msg.style.opacity = "0";
-    }, 2000);
-  });
-});
-
 
 // ===========================
 // FIX RTL
@@ -36,24 +260,37 @@ document.getElementById("saveKey").addEventListener("click", () => {
 document.getElementById("fixRTL").addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true });
 
-  chrome.storage.local.get(["geminiKey"], ({ geminiKey }) => {
-    if (!geminiKey) return alert("Please save your API key first.");
+  chrome.storage.local.get(["geminiKeys","activeIndex"], ({ geminiKeys, activeIndex }) => {
 
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: advancedRTLFixerInsidePage,
-      args: [geminiKey]
-    });
+  if (!geminiKeys || !geminiKeys.length)
+    return alert("Please add at least one API key.");
 
-    // 🔥 Close popup immediately after triggering the script
-    window.close();
-  });
+  const currentKey = geminiKeys[activeIndex]?.key;
+  if (!currentKey) return alert("Invalid active API key.");
+
+  chrome.scripting.executeScript({
+  target: { tabId: tab.id },
+  func: advancedRTLFixerInsidePage,
+  args: []   // ⬅️ no more key passed
 });
+});
+});
+// =====================================================================
+//        INSIDE PAGE - ADVANCED RTL FIXER (FULL, FIXED, UNSHRUNK VERSION)
+// =====================================================================
+async function advancedRTLFixerInsidePage() {
 
-// =====================================================================
-//        INSIDE PAGE - ADVANCED RTL FIXER + C#-STYLE NARRATOR + CHUNKING
-// =====================================================================
-async function advancedRTLFixerInsidePage(apiKey) {
+  async function getNextKey() {
+    return new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: "GET_NEXT_KEY" }, resolve);
+    });
+  }
+
+  async function consumeLines(lines) {
+    return new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: "CONSUME_LINES", lines }, resolve);
+    });
+  }
 
   // =========================
   // Step 1 - Collect RTL nodes
@@ -259,6 +496,7 @@ async function advancedRTLFixerInsidePage(apiKey) {
   color: #9ca3af;
 }
 `;
+
   document.body.appendChild(style);
   document.body.appendChild(overlay);
 
@@ -286,25 +524,46 @@ async function advancedRTLFixerInsidePage(apiKey) {
   // =========================
   const CHUNK_SIZE = 40;
 
+  // Take a safe snapshot of all text nodes
+  const lines = nodes.map(n => ({
+    node: n,
+    text: n.nodeValue
+  }));
+
   function chunkArray(arr, size) {
     const out = [];
-    for (let i = 0; i < arr.length; i += size)
+    for (let i = 0; i < arr.length; i += size) {
       out.push(arr.slice(i, i + size));
+    }
     return out;
   }
 
-  const nodeChunks = chunkArray(nodes, CHUNK_SIZE);
-  const correctedGlobal = new Array(nodes.length);
+  const nodeChunks = chunkArray(lines, CHUNK_SIZE);
+
+  try {
+    chrome.runtime?.sendMessage({
+      type: "RTL_USAGE",
+      chunks: nodeChunks.length,
+      lines: lines.length
+    });
+  } catch(e){}
+
+  const correctedGlobal = new Array(lines.length);
+
+  // Helper: force each text node into ONE AI line
+  function oneLine(txt) {
+  return txt.replace(/\r?\n/g, " <<NEWLINE>> ");
+}
 
   async function processChunk(chunkIndex, chunkNodes) {
     const startIndex = chunkIndex * CHUNK_SIZE;
 
     let blockChunk = "";
-    chunkNodes.forEach((node, i) => {
-      blockChunk += `LINE_${startIndex + i}: ${node.nodeValue}\n`;
+    chunkNodes.forEach((item, i) => {
+      blockChunk += `LINE_${startIndex + i}: ${oneLine(item.text)}\n`;
     });
 
-   const prompt = `
+    const prompt = `
 You are an expert multilingual punctuation engine.
 
 SUPPORTED LANGUAGES:
@@ -348,60 +607,86 @@ LINE_k: corrected text
 LINES:
 ${blockChunk}
 `;
+
     await showNarration(
       `Processing chunk ${chunkIndex + 1}/${nodeChunks.length}`,
       `Sending ${chunkNodes.length} lines to Gemini`
     );
 
-    let raw = "";
-
-    try {
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        }
-      );
-      const json = await response.json();
-      raw = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    } catch (e) {
-      console.error("Chunk error:", e);
-      return;
+    const keyInfo = await getNextKey();
+    if (!keyInfo || !keyInfo.key) {
+      alert("All API keys are exhausted.");
+      throw new Error("NO_KEYS_LEFT");
     }
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
+
+    await consumeLines(chunkNodes.length);
+
+    const json = await response.json();
+    const raw = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     raw.split("\n").forEach(line => {
       const m = line.match(/^LINE_(\d+):\s*(.*)$/);
       if (!m) return;
-      correctedGlobal[Number(m[1])] = m[2];
+
+      const idx = Number(m[1]);
+      let text = m[2];
+
+      if (typeof text === "string" && text.length > 0) {
+        correctedGlobal[idx] = text.replace(/ *<<NEWLINE>> */g, "\n");
+      }
     });
   }
 
-  // Process all chunks
-  for (let c = 0; c < nodeChunks.length; c++) {
-    await processChunk(c, nodeChunks[c]);
+  try {
+    for (let c = 0; c < nodeChunks.length; c++) {
+      await processChunk(c, nodeChunks[c]);
+    }
+  } catch (e) {
+    if (e.message === "NO_KEYS_LEFT") {
+      alert("Processing stopped — all API keys reached limit.");
+    } else {
+      console.error(e);
+    }
+  }
+
+  // FINAL SANITY BACKUP: prevent any deletion
+  for (let i = 0; i < lines.length; i++) {
+    if (
+      typeof correctedGlobal[i] !== "string" ||
+      correctedGlobal[i].trim().length === 0
+    ) {
+      correctedGlobal[i] = lines[i].text;
+    }
   }
 
   // =========================
   // Step 4 - Apply fixes per-line
   // =========================
-  const totalLines = nodes.length;
+  const totalLines = lines.length;
   statusEl.textContent = "Applying corrections";
 
   for (let i = 0; i < totalLines; i++) {
-    const before = nodes[i].nodeValue;
-    const after = correctedGlobal[i] ?? before;
+    const node = lines[i].node;
+    const before = node.nodeValue;
+    const after = correctedGlobal[i];
 
     await showNarration(
       `Fixing line ${i + 1} of ${totalLines}`,
       `Original: ${shorten(before)}`
     );
 
-    // Punctuation-only change, spacing preserved by prompt
-    nodes[i].nodeValue = after;
+    node.nodeValue = after;
 
     const pct = Math.round(((i + 1) / totalLines) * 100);
     fillEl.style.width = pct + "%";
