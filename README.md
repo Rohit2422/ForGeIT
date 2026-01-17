@@ -1,47 +1,95 @@
-## About
+# ForGeIT — Chrome Extension Documentation
 
-**ForGeIT** (Forge + IT) represents the combination of creativity and digital tools — forging better HTML management workflows.  
-It is lightweight, fast, and user-friendly, aiming to simplify web content editing, cleanup, validation, and export tasks all in one extension.
-
----
-
-## Core Features
-
-- **Real-time HTML Validation** – Quickly validate your HTML content for errors.  
-- **Content Cleanup Tools** – Remove inline styles, classes/IDs, `<span>` tags, `&nbsp;` entities, organize HTML, fix Unicode, clean hyperlinks.  
-- **Inline Editing Mode** – Edit content directly in-page with heading mode, hyperlink injection, line break fixes, and image/table manipulation.  
-- **Multiple Export Options** – Export content as HTML, PDF, Word, Markdown, Text, or Excel.
+## Overview
+ForGeIT is a powerful Chrome extension that provides tools for:
+- Cleaning and converting HTML
+- Fixing RTL text and punctuation
+- Handling tables, lists, and numbering
+- Converting XML and PDFs to structured HTML
+- Performing OCR on images and PDFs
 
 ---
 
-## Workflow
-
-1. **Select files or pages** – Choose the content you want to enhance.  
-2. **Run validation & cleanup** – Automatically clean and validate HTML structure.  
-3. **Edit and enhance content** – Apply inline edits, styles, and enhancements.  
-4. **Export final results** – Save your content in the desired format.
-
----
-
-## Why Use ForGeIT?
-
-Instead of juggling multiple tools for cleanup, validation, and conversion, **ForGeIT** combines everything in a single extension. It is designed to be:
-
-- Lightweight and fast  
-- Easy to use  
-- All-in-one solution for HTML content management  
+## Installation
+1. Open Chrome and go to chrome://extensions/
+2. Enable Developer Mode (top right)
+3. Click “Load unpacked”
+4. Select the extension folder
+5. The extension will appear in your toolbar
 
 ---
 
-## Version
+## Features
 
-**Current Version:** v1.0.0
+### Generate TOC
+- Scans h1–h15 headings
+- Builds a floating, interactive TOC
+- Supports search, insert, copy, and export
+
+### HTML Lossless Cleaner
+- Removes empty <p>, <div>, and headings
+- Normalizes whitespace
+- Preserves table and footnote content
+
+### XML → HTML Converter
+- Converts structured XML into clean HTML
+- Fixes footnotes, URLs, and headings
+
+### OCR Tool
+- Extracts text from images and PDFs
+- Supports cropping and multi-page PDFs
+- Converts output into clean HTML paragraphs
+
+### PDF → HTML Converter
+- Uses PDF.js + AI pipeline
+- Detects tables and structure
+- Outputs semantic HTML
+
+### RTL Auto Fix
+- ALT + ← sets dir="rtl"
+- ALT + → removes dir
+
+### RTL Table Fix
+- ALT + ← sets table RTL
+- CTRL + ALT + → aligns table right
+
+### RTL Line-Break Fix
+- Enter splits paragraphs
+- Backspace merges paragraphs
+
+### Multilingual List Fixer
+- Supports ~58 languages
+- Converts numbering to native scripts
+
+### AI RTL Punctuation Fixer
+- Detects RTL text
+- Processes in chunks
+- Fixes punctuation safely using AI
 
 ---
 
-## Developer
+## Keyboard Shortcuts
+| Feature | Shortcut | Action |
+|--------|---------|--------|
+| RTL Auto Fix | ALT + ← | Set RTL |
+| RTL Auto Fix | ALT + → | Remove RTL |
+| RTL Table Fix | CTRL + ALT + → | Align Right |
+| RTL Line-Break Fix | Enter | Split Paragraph |
 
-Developed & maintained by:  
-**Rohit** – *Junior Content Capture Analyst (CUBE)*
+---
+
+## API Key Management
+- Multiple Gemini keys supported
+- Each key has a 400-line limit
+- The system auto-switches keys when needed
+
+---
+
+## Troubleshooting
+| Issue | Fix |
+|------|-----|
+| TOC not showing | Ensure headings exist |
+| OCR fails | Check internet |
+| API key exhausted | Add new key |
 
 ---
